@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,11 +23,11 @@ import {
 } from "@/services/messageService";
 import { Switch } from "@/components/ui/switch";
 import {
-  NewsSource,
-  getNewsSources,
-  toggleNewsSource,
-  initDefaultSources,
-} from "@/services/newsSourcesService";
+  getFontesNoticia,
+  updatePreferenciasNoticia,
+  type FonteNoticiaAdmin,
+} from "@/services/newsAdminService";
+import { requestJson } from "@/services/apiClient";
 import {
   Lock,
   LogOut,
@@ -50,12 +50,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const ADMIN_PASSWORD = "sindico123";
-
 export function Admin() {
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState(ADMIN_PASSWORD); // Pré-preenchida
+  const [usuario, setUsuario] = useState("admin");
+  const [password, setPassword] = useState("");
+  const [token, setToken] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -67,7 +68,7 @@ export function Admin() {
   const [formActive, setFormActive] = useState(true);
 
   // News sources state
-  const [newsSources, setNewsSources] = useState<NewsSource[]>([]);
+  const [newsSources, setNewsSources] = useState<FonteNoticiaAdmin[]>([]);
 
   // Rich text formatting
   const applyFormatting = (tag: string) => {
@@ -97,14 +98,19 @@ export function Admin() {
   useEffect(() => {
     if (isAuthenticated) {
       loadMessages();
-      initDefaultSources();
-      setNewsSources(getNewsSources());
+      loadFontes();
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!slug) {
+      navigate("/gramado", { replace: true });
+    }
+  }, [slug, navigate]);
+
   const loadMessages = async () => {
     try {
-      const msgs = await getMessages();
+      const msgs = await getMessages(slug ?? "gramado");
       if (!msgs) {
         toast.error("Erro ao carregar mensagens do servidor");
         return;
@@ -116,31 +122,70 @@ export function Admin() {
     }
   };
 
-  const handleToggleSource = (id: string) => {
-    const success = toggleNewsSource(id);
-    if (!success) {
+  const loadFontes = async () => {
+    try {
+      const fontes = await getFontesNoticia(slug ?? "gramado", token);
+      setNewsSources(fontes);
+    } catch (err) {
+      console.error("Erro ao carregar fontes:", err);
+      toast.error("Erro ao carregar fontes de noticia");
+    }
+  };
+
+  const handleToggleSource = async (id: number) => {
+    const updated = newsSources.map((source) =>
+      source.id === id
+        ? { ...source, habilitado: !source.habilitado }
+        : source,
+    );
+
+    if (updated.filter((s) => s.habilitado).length === 0) {
       toast.error("É necessário manter pelo menos uma fonte ativa!");
       return;
     }
-    setNewsSources(getNewsSources());
-    const source = newsSources.find((s) => s.id === id);
-    const newState = !source?.enabled;
-    toast.success(`${source?.name} ${newState ? "ativado" : "desativado"}`);
+
+    setNewsSources(updated);
+    try {
+      await updatePreferenciasNoticia(
+        slug ?? "gramado",
+        token,
+        updated.map((s) => ({ chave: s.chave, habilitado: s.habilitado })),
+      );
+      const source = updated.find((s) => s.id === id);
+      toast.success(`${source?.nome} ${source?.habilitado ? "ativado" : "desativado"}`);
+    } catch (err) {
+      console.error("Erro ao atualizar fontes:", err);
+      toast.error("Erro ao salvar preferencia de fonte");
+      await loadFontes();
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    try {
+      const data = await requestJson<{ token: string }>(
+        slug ?? "gramado",
+        "/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuario, senha: password }),
+        },
+        "login",
+      );
+      setToken(data.token);
       setIsAuthenticated(true);
       toast.success("Login realizado com sucesso!");
-    } else {
-      toast.error("Senha incorreta!");
+    } catch (err) {
+      console.error("Erro ao autenticar:", err);
+      toast.error("Credenciais invalidas");
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setPassword(ADMIN_PASSWORD);
+    setToken(null);
+    setPassword("");
     toast.info("Logout realizado");
   };
 
@@ -175,7 +220,7 @@ export function Admin() {
 
     try {
       if (isAdding) {
-        const created = await addMessage({
+        const created = await addMessage(slug ?? "gramado", token, {
           title: formTitle.trim(),
           content: formContent.trim(),
           priority: formPriority,
@@ -183,11 +228,13 @@ export function Admin() {
         });
         // Se o active não foi setado corretamente na criação, atualiza
         if (created && created.active !== formActive) {
-          await updateMessage(created.id, { active: formActive });
+          await updateMessage(slug ?? "gramado", token, created.id, {
+            active: formActive,
+          });
         }
         toast.success("Recado adicionado!");
       } else if (editingId) {
-        await updateMessage(editingId, {
+        await updateMessage(slug ?? "gramado", token, editingId, {
           title: formTitle.trim(),
           content: formContent.trim(),
           priority: formPriority,
@@ -207,7 +254,7 @@ export function Admin() {
   const handleDelete = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir este recado?")) {
       try {
-        await deleteMessage(id);
+        await deleteMessage(slug ?? "gramado", token, id);
         toast.success("Recado excluído!");
         await loadMessages();
         if (editingId === id) {
@@ -237,6 +284,18 @@ export function Admin() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="usuario" className="text-white">
+                  Usuario
+                </Label>
+                <Input
+                  id="usuario"
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
+                  placeholder="Digite o usuario"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="password" className="text-white">
                   Senha
                 </Label>
@@ -256,7 +315,7 @@ export function Admin() {
                 type="button"
                 variant="ghost"
                 className="w-full text-white/50 hover:text-white"
-                onClick={() => navigate("/")}
+                onClick={() => navigate(`/${slug ?? "gramado"}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar para tela
@@ -277,7 +336,7 @@ export function Admin() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/")}
+            onClick={() => navigate(`/${slug ?? "gramado"}`)}
             className="text-white/60 hover:text-white h-8 w-8"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -310,7 +369,7 @@ export function Admin() {
             Fontes de Notícias
           </CardTitle>
           <span className="text-white/40 text-xs">
-            {newsSources.filter((s) => s.enabled).length} de{" "}
+            {newsSources.filter((s) => s.habilitado).length} de{" "}
             {newsSources.length} ativas
           </span>
         </CardHeader>
@@ -324,7 +383,7 @@ export function Admin() {
               <div
                 key={source.id}
                 className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                  source.enabled
+                  source.habilitado
                     ? "border-green-500/30 bg-green-500/10"
                     : "border-white/10 bg-white/5 opacity-60"
                 }`}
@@ -332,25 +391,25 @@ export function Admin() {
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div
                     className={`p-2 rounded-lg ${
-                      source.enabled ? "bg-green-500/20" : "bg-white/10"
+                      source.habilitado ? "bg-green-500/20" : "bg-white/10"
                     }`}
                   >
                     <Rss
                       className={`w-4 h-4 ${
-                        source.enabled ? "text-green-400" : "text-white/40"
+                        source.habilitado ? "text-green-400" : "text-white/40"
                       }`}
                     />
                   </div>
                   <div className="min-w-0">
                     <p
                       className={`font-medium text-sm truncate ${
-                        source.enabled ? "text-white" : "text-white/50"
+                        source.habilitado ? "text-white" : "text-white/50"
                       }`}
                     >
-                      {source.name}
+                      {source.nome}
                     </p>
                     <p className="text-white/30 text-[10px] truncate">
-                      {source.feedUrl
+                      {source.urlBase
                         .replace("https://", "")
                         .replace("http://", "")
                         .slice(0, 40)}
@@ -358,7 +417,7 @@ export function Admin() {
                   </div>
                 </div>
                 <Switch
-                  checked={source.enabled}
+                  checked={source.habilitado}
                   onCheckedChange={() => handleToggleSource(source.id)}
                 />
               </div>

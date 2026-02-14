@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { DigitalClock } from "@/components/DigitalClock";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
@@ -13,24 +14,37 @@ import {
 } from "@/services/weatherService";
 import { fetchNews, getCachedNews, NewsData } from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
-import {
-  getEnabledSourceIds,
-  initDefaultSources,
-} from "@/services/newsSourcesService";
+import { getPredio } from "@/services/predioService";
 
 export function Dashboard() {
   const { isOnline, isSyncing, lastSyncAt } = useOfflineSync();
+  const { slug } = useParams();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [enabledSourceIds, setEnabledSourceIds] = useState<string[]>(() => {
-    initDefaultSources();
-    return getEnabledSourceIds();
-  });
+
+  useEffect(() => {
+    if (!slug) {
+      navigate("/gramado", { replace: true });
+    }
+  }, [slug, navigate]);
+
+  useEffect(() => {
+    const loadPredio = async () => {
+      try {
+        const predio = await getPredio(slug ?? "gramado");
+        document.title = predio.nome;
+      } catch (err) {
+        console.error("Erro ao carregar predio:", err);
+      }
+    };
+    loadPredio();
+  }, [slug]);
 
   // Carrega mensagens iniciais
   useEffect(() => {
     const loadInitial = async () => {
       try {
-        const msgs = await getMessages();
+        const msgs = await getMessages(slug ?? "gramado");
         if (msgs !== null) {
           setMessages(msgs);
         }
@@ -45,19 +59,13 @@ export function Dashboard() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const msgs = await getMessages();
+        const msgs = await getMessages(slug ?? "gramado");
         if (msgs !== null) {
           setMessages(msgs);
         }
       } catch (err) {
         console.error("Erro no polling de mensagens:", err);
       }
-      const newIds = getEnabledSourceIds();
-      setEnabledSourceIds((prev) => {
-        const prevStr = prev.join(",");
-        const newStr = newIds.join(",");
-        return prevStr !== newStr ? newIds : prev;
-      });
     }, 5000); // A cada 5 segundos
 
     return () => clearInterval(interval);
@@ -104,14 +112,14 @@ export function Dashboard() {
     isLoading: newsLoading,
     error: newsError,
   } = useQuery<NewsData | null>({
-    queryKey: ["news", enabledSourceIds],
+    queryKey: ["news", slug],
     queryFn: async () => {
       try {
-        const result = await fetchNews();
+        const result = await fetchNews(slug ?? "gramado");
         return result;
       } catch (err) {
         // Se falhar, tenta retornar do cache
-        const cached = getCachedNews();
+        const cached = getCachedNews(slug ?? "gramado");
         if (cached) return cached;
         throw err;
       }
