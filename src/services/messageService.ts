@@ -61,7 +61,10 @@ export async function getMessages(slug: string): Promise<Message[] | null> {
   }
 }
 
-export async function getMessage(slug: string, id: string): Promise<Message | null> {
+export async function getMessage(
+  slug: string,
+  id: string,
+): Promise<Message | null> {
   const messages = await getMessages(slug);
   return messages?.find((m) => m.id === id) || null;
 }
