@@ -112,7 +112,7 @@ export async function updateMessage(
     ativo: data.active ?? true,
   };
 
-  const updated = await requestJson<{ id: number }>(
+  const updated = await requestJson<AvisoDto>(
     slug,
     `/admin/aviso/${encodeURIComponent(id)}`,
     {
@@ -126,8 +126,7 @@ export async function updateMessage(
     "updateMessage",
   );
 
-  const fallback = await getMessage(slug, String(updated.id));
-  return fallback;
+  return mapAvisoToMessage(updated);
 }
 
 export async function deleteMessage(
@@ -156,9 +155,9 @@ export async function login(
   username: string,
   password: string,
 ): Promise<LoginResponse> {
-  // Use a default slug since the developer login works from any slug
+  // Use 'gramado' slug since the developer login works from any slug
   return await requestJson<LoginResponse>(
-    "master",
+    "gramado",
     "/auth/login",
     {
       method: "POST",

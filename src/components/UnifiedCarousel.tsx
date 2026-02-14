@@ -1,11 +1,5 @@
-import { useEffect, useCallback, useMemo } from "react";
-import Autoplay from "embla-carousel-autoplay";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
 import { NewsItem } from "@/services/newsService";
 import { Message } from "@/services/messageService";
 import { MessageSquare, AlertTriangle, Clock } from "lucide-react";
@@ -53,6 +47,8 @@ export function UnifiedCarousel({
   messages,
   isLoading,
 }: UnifiedCarouselProps) {
+  const [current, setCurrent] = useState(0);
+  const slideDurationMs = 10000;
   // Criar slides unificados com priorização inteligente
   const slides = useMemo((): UnifiedSlide[] => {
     // Separar mensagens por prioridade
@@ -76,22 +72,25 @@ export function UnifiedCarousel({
     return [...urgentSlides, ...interleave(messageSlides, newsSlides)];
   }, [messages, newsItems]);
 
-  const autoplayPlugin = useCallback(
-    () =>
-      Autoplay({
-        delay: 10000, // Delay base (será ajustado dinamicamente)
-        stopOnInteraction: false,
-        stopOnMouseEnter: true,
-      }),
-    [],
-  );
-
   // Log apenas quando slides mudam (DEVE vir ANTES de qualquer return condicional)
   useEffect(() => {
     if (slides.length > 0) {
       console.log(`📰 Carrossel: ${slides.length} itens`);
     }
   }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length === 0) {
+      return;
+    }
+
+    setCurrent(0);
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, slideDurationMs);
+
+    return () => clearInterval(timer);
+  }, [slides.length, slideDurationMs]);
 
   // Estado de loading
   if (isLoading && slides.length === 0) {
@@ -123,30 +122,25 @@ export function UnifiedCarousel({
 
   return (
     <div className="h-full">
-      <Carousel
-        plugins={[autoplayPlugin()]}
-        className="h-full w-full"
-        opts={{ loop: true }}
-      >
-        <CarouselContent className="h-full ml-0">
-          {slides.map((slide, index) => (
-            <CarouselItem
-              key={`${slide.type}-${index}`}
-              className="h-full pl-0 basis-full"
-            >
-              {slide.type === "news" && (
-                <NewsSlide item={slide.data as NewsItem} />
-              )}
-              {slide.type === "message" && (
-                <MessageSlide message={slide.data as Message} />
-              )}
-              {slide.type === "urgent" && (
-                <UrgentSlide message={slide.data as Message} />
-              )}
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-      </Carousel>
+      <div className="fade-stack h-full">
+        {slides.map((slide, index) => (
+          <div
+            key={`${slide.type}-${index}`}
+            className={`fade-slide ${index === current ? "is-active" : ""}`}
+            aria-hidden={index !== current}
+          >
+            {slide.type === "news" && (
+              <NewsSlide item={slide.data as NewsItem} />
+            )}
+            {slide.type === "message" && (
+              <MessageSlide message={slide.data as Message} />
+            )}
+            {slide.type === "urgent" && (
+              <UrgentSlide message={slide.data as Message} />
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
