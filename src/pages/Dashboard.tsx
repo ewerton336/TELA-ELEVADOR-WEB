@@ -14,13 +14,15 @@ import {
 } from "@/services/weatherService";
 import { fetchNews, getCachedNews, NewsData } from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
-import { getPredio } from "@/services/predioService";
+import { getPredio, OrientationMode } from "@/services/predioService";
 
 export function Dashboard() {
   const { isOnline, isSyncing, lastSyncAt } = useOfflineSync();
   const { slug } = useParams();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [orientationMode, setOrientationMode] =
+    useState<OrientationMode>("auto");
 
   useEffect(() => {
     if (!slug) {
@@ -33,12 +35,27 @@ export function Dashboard() {
       try {
         const predio = await getPredio(slug ?? "gramado");
         document.title = predio.nome;
+        setOrientationMode(predio.orientationMode ?? "auto");
       } catch (err) {
         console.error("Erro ao carregar predio:", err);
       }
     };
     loadPredio();
   }, [slug]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("force-portrait", "force-landscape");
+    if (orientationMode === "portrait") {
+      root.classList.add("force-portrait");
+    } else if (orientationMode === "landscape") {
+      root.classList.add("force-landscape");
+    }
+
+    return () => {
+      root.classList.remove("force-portrait", "force-landscape");
+    };
+  }, [orientationMode]);
 
   // Carrega mensagens iniciais
   useEffect(() => {
@@ -142,52 +159,51 @@ export function Dashboard() {
 
   return (
     <div className="elevator-screen h-screen w-screen overflow-hidden">
-      <div className="relative w-full h-full overflow-hidden border border-white/10 shadow-2xl bg-slate-950/80 backdrop-blur-lg">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_35%),radial-gradient(circle_at_80%_0,rgba(255,115,29,0.08),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(88,28,135,0.12),transparent_35%)]" />
+      <div className="elevator-rotate">
+        <div className="relative w-full h-full overflow-hidden border border-white/10 shadow-2xl bg-slate-950/80 backdrop-blur-lg elevator-frame">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_35%),radial-gradient(circle_at_80%_0,rgba(255,115,29,0.08),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(88,28,135,0.12),transparent_35%)]" />
 
-        <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4">
+          <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4 dashboard-grid">
           {/* Coluna de avisos à esquerda */}
-          <aside className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden">
+          <aside className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos">
             <div className="h-full px-4 py-3">
               <MessageBoard messages={messages} />
             </div>
           </aside>
 
-          {/* Área principal de notícias */}
-          <section className="h-full flex flex-col gap-3 overflow-hidden">
-            {/* Barra superior com relógio, clima e status */}
-            <header className="flex-shrink-0 flex items-center justify-between gap-3 px-2">
-              <DigitalClock />
+          {/* Barra superior com relogio, clima e status */}
+          <header className="flex items-center justify-between gap-3 px-2 dashboard-header">
+            <DigitalClock />
 
-              <div className="flex items-center gap-3">
-                <div className="max-w-sm">
-                  <WeatherCard
-                    data={weatherData ?? null}
-                    isLoading={weatherLoading}
-                    compact
-                  />
-                </div>
-
-                <ConnectionStatus
-                  isOnline={isOnline}
-                  isSyncing={isSyncing}
-                  lastSyncAt={lastSyncAt}
+            <div className="flex items-center gap-3">
+              <div className="max-w-sm">
+                <WeatherCard
+                  data={weatherData ?? null}
+                  isLoading={weatherLoading}
+                  compact
                 />
               </div>
-            </header>
 
-            {/* Carrossel de notícias */}
-            <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-xl">
-              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} />
+              <ConnectionStatus
+                isOnline={isOnline}
+                isSyncing={isSyncing}
+                lastSyncAt={lastSyncAt}
+              />
             </div>
-          </section>
+          </header>
+
+          {/* Carrossel de noticias */}
+          <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-xl dashboard-news">
+            <NewsCarousel data={newsData ?? null} isLoading={newsLoading} />
+          </div>
         </div>
 
         {/* Créditos do desenvolvedor */}
-        <div className="absolute bottom-2 right-4 z-20">
-          <p className="text-white/100 text-[10px]">
-            Desenvolvido por Ewerton Guimarães • (13) 99782-7870
-          </p>
+          <div className="absolute bottom-2 right-4 z-20">
+            <p className="text-white/100 text-[10px]">
+              Desenvolvido por Ewerton Guimarães • (13) 99782-7870
+            </p>
+          </div>
         </div>
       </div>
     </div>

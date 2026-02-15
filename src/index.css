@@ -74,6 +74,120 @@
 /* Estilos específicos para tela de elevador */
 .elevator-screen {
   @apply h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
+  position: relative;
+}
+
+.elevator-rotate {
+  width: 100%;
+  height: 100%;
+}
+
+.elevator-frame {
+  width: 100%;
+  height: 100%;
+}
+
+.dashboard-grid {
+  grid-template-rows: auto 1fr;
+}
+
+.dashboard-avisos {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.dashboard-header {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dashboard-news {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+@media (orientation: portrait) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 3fr 7fr;
+  }
+
+  .dashboard-header {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .dashboard-avisos {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .dashboard-news {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .news-content {
+    max-width: 100% !important;
+  }
+}
+
+.force-portrait .dashboard-grid {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 3fr 7fr;
+}
+
+.force-portrait .dashboard-header {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.force-portrait .dashboard-avisos {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.force-portrait .dashboard-news {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.force-portrait .news-content {
+  max-width: 100% !important;
+}
+
+.force-portrait .elevator-rotate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
+}
+
+.force-landscape .dashboard-grid {
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.force-landscape .dashboard-avisos {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.force-landscape .dashboard-header {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.force-landscape .dashboard-news {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.force-landscape .news-content {
+  max-width: 72% !important;
 }
 
 .glass-card {

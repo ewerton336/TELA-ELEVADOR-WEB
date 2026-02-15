@@ -49,6 +49,30 @@ import {
   Rss,
 } from "lucide-react";
 import { toast } from "sonner";
+import * as predioAdminService from "@/services/predioAdminService";
+import type { OrientationMode } from "@/services/predioService";
+
+function getRoleFromToken(token: string | null): string | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  const padded = payload + "===".slice((payload.length + 3) % 4);
+
+  try {
+    const json = atob(padded);
+    const data = JSON.parse(json) as Record<string, unknown>;
+    console.log('[getRoleFromToken] Decoded payload:', data);
+    
+    // Try both "role" and the ClaimTypes.Role URI
+    const role = data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    return typeof role === "string" ? role : null;
+  } catch {
+    console.error('[getRoleFromToken] Failed to decode token');
+    return null;
+  }
+}
 
 export function Admin() {
   const navigate = useNavigate();
@@ -69,6 +93,9 @@ export function Admin() {
 
   // News sources state
   const [newsSources, setNewsSources] = useState<FonteNoticiaAdmin[]>([]);
+  const [orientationMode, setOrientationMode] =
+    useState<OrientationMode>("auto");
+  const [isDeveloper, setIsDeveloper] = useState(false);
 
   // Rich text formatting
   const applyFormatting = (tag: string) => {
@@ -107,6 +134,35 @@ export function Admin() {
       navigate("/gramado", { replace: true });
     }
   }, [slug, navigate]);
+
+  useEffect(() => {
+    const role = getRoleFromToken(token);
+    console.log('[Admin] Token:', token?.substring(0, 50) + '...');
+    console.log('[Admin] Role from token:', role);
+    console.log('[Admin] isDeveloper:', role?.toLowerCase() === "developer");
+    setIsDeveloper(role?.toLowerCase() === "developer");
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !isDeveloper) {
+      return;
+    }
+
+    const loadOrientation = async () => {
+      try {
+        const data = await predioAdminService.getPredioOrientation(
+          slug ?? "gramado",
+          token,
+        );
+        setOrientationMode(data.orientationMode ?? "auto");
+      } catch (err) {
+        console.error("Erro ao carregar orientacao:", err);
+        toast.error("Erro ao carregar orientacao da tela");
+      }
+    };
+
+    loadOrientation();
+  }, [isDeveloper, slug, token]);
 
   const loadMessages = async () => {
     try {
@@ -186,7 +242,29 @@ export function Admin() {
     setIsAuthenticated(false);
     setToken(null);
     setPassword("");
+    setIsDeveloper(false);
+    setOrientationMode("auto");
     toast.info("Logout realizado");
+  };
+
+  const handleOrientationChange = async (value: OrientationMode) => {
+    if (!token) return;
+    try {
+      await predioAdminService.updatePredioOrientation(
+        slug ?? "gramado",
+        token,
+        value,
+      );
+      setOrientationMode(value);
+      toast.success(
+        value === "auto"
+          ? "Orientacao automatica ativada"
+          : `Modo ${value === "portrait" ? "retrato" : "paisagem"} forcado`,
+      );
+    } catch (err) {
+      console.error("Erro ao atualizar orientacao:", err);
+      toast.error("Erro ao salvar orientacao da tela");
+    }
   };
 
   const resetForm = () => {
@@ -360,6 +438,46 @@ export function Admin() {
           Sair
         </Button>
       </header>
+
+      {isDeveloper && (
+        <Card className="glass-card border-white/10 mb-4">
+          <CardHeader className="flex-row items-center justify-between py-3 px-4">
+            <CardTitle className="text-white flex items-center gap-2 text-sm">
+              Modo de exibicao da tela
+            </CardTitle>
+            <span className="text-white/40 text-xs">
+              {orientationMode === "auto"
+                ? "Automatico"
+                : orientationMode === "portrait"
+                  ? "Retrato"
+                  : "Paisagem"}
+            </span>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <p className="text-white/50 text-xs mb-3">
+              Forca o modo retrato ou paisagem, mesmo se a tela estiver em outra
+              orientacao.
+            </p>
+            <div className="max-w-xs">
+              <Select
+                value={orientationMode}
+                onValueChange={
+                  handleOrientationChange as (value: string) => void
+                }
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white h-8 text-sm">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Automatico (dispositivo)</SelectItem>
+                  <SelectItem value="portrait">Forcar Retrato</SelectItem>
+                  <SelectItem value="landscape">Forcar Paisagem</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Fontes de Notícias */}
       <Card className="glass-card border-white/10 mb-4">

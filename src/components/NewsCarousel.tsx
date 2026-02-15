@@ -104,7 +104,7 @@ export function NewsCarousel({ data, isLoading }: NewsCarouselProps) {
                   </span>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center gap-4 max-w-[72%]">
+                <div className="flex-1 flex flex-col justify-center gap-4 max-w-[72%] news-content">
                   <h3 className="bg-orange-500 text-slate-900 font-black text-2xl sm:text-3xl md:text-4xl leading-tight px-3 py-2 rounded shadow-lg drop-shadow">
                     {item.title}
                   </h3>

@@ -6,7 +6,10 @@ export type Predio = {
   nome: string;
   cidade: string;
   criadoEm: string;
+  orientationMode?: OrientationMode;
 };
+
+export type OrientationMode = "auto" | "portrait" | "landscape";
 
 export async function getPredio(slug: string): Promise<Predio> {
   return await requestJson<Predio>(
