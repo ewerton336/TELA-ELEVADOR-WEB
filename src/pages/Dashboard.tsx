@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { DigitalClock } from "@/components/DigitalClock";
@@ -23,6 +23,8 @@ export function Dashboard() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
+  const messageBoardRef = useRef<HTMLDivElement>(null);
+  const [messageBoardHeight, setMessageBoardHeight] = useState(0);
 
   useEffect(() => {
     if (!slug) {
@@ -56,6 +58,32 @@ export function Dashboard() {
       root.classList.remove("force-portrait", "force-landscape");
     };
   }, [orientationMode]);
+
+  // Mede a altura do MessageBoard e atualiza o CSS dinamicamente
+  useEffect(() => {
+    const measureMessageBoard = () => {
+      if (messageBoardRef.current) {
+        const height = messageBoardRef.current.scrollHeight;
+        setMessageBoardHeight(height);
+        // Define variável CSS customizada para uso no layout dinâmico
+        document.documentElement.style.setProperty(
+          "--message-board-height",
+          `${height}px`
+        );
+      }
+    };
+
+    // Mede inicialmente
+    measureMessageBoard();
+
+    // Remede quando houver mudanças nas mensagens
+    const observer = new ResizeObserver(measureMessageBoard);
+    if (messageBoardRef.current) {
+      observer.observe(messageBoardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [messages]);
 
   // Carrega mensagens iniciais
   useEffect(() => {
@@ -165,7 +193,7 @@ export function Dashboard() {
 
           <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4 dashboard-grid">
           {/* Coluna de avisos à esquerda */}
-          <aside className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos">
+          <aside className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos" ref={messageBoardRef}>
             <div className="h-full px-4 py-3">
               <MessageBoard messages={messages} />
             </div>

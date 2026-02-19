@@ -133,23 +133,28 @@
 }
 
 .force-portrait .dashboard-grid {
-  grid-template-columns: 1fr;
-  grid-template-rows: auto 3fr 7fr;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .force-portrait .dashboard-header {
-  grid-column: 1;
-  grid-row: 1;
+  flex-shrink: 0;
+  order: 0;
 }
 
 .force-portrait .dashboard-avisos {
-  grid-column: 1;
-  grid-row: 2;
+  flex: 0 1 auto;
+  min-height: 0;
+  order: 1;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .force-portrait .dashboard-news {
-  grid-column: 1;
-  grid-row: 3;
+  flex: 1 1 auto;
+  min-height: 0;
+  order: 2;
 }
 
 .force-portrait .news-content {

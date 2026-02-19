@@ -23,6 +23,7 @@ type AvisoDto = {
   inicioEm?: string | null;
   fimEm?: string | null;
   ativo: boolean;
+  prioridade?: string;
   criadoEm: string;
 };
 
@@ -31,7 +32,7 @@ function mapAvisoToMessage(aviso: AvisoDto): Message {
     id: String(aviso.id),
     title: aviso.titulo,
     content: aviso.mensagem,
-    priority: "normal",
+    priority: (aviso.prioridade === "urgent" ? "urgent" : "normal") as MessagePriority,
     active: aviso.ativo,
     createdAt: aviso.criadoEm,
     updatedAt: aviso.criadoEm,
@@ -82,6 +83,7 @@ export async function addMessage(
     inicioEm: null,
     fimEm: null,
     ativo: data.active ?? true,
+    prioridade: data.priority,
   };
 
   const created = await requestJson<AvisoDto>(
@@ -113,6 +115,7 @@ export async function updateMessage(
     inicioEm: null,
     fimEm: null,
     ativo: data.active ?? true,
+    prioridade: data.priority,
   };
 
   const updated = await requestJson<AvisoDto>(

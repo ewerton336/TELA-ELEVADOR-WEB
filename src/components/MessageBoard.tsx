@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Message } from "@/services/messageService";
 import { MessageSquare, AlertTriangle, Clock } from "lucide-react";
 
@@ -125,30 +124,18 @@ export function MessageBoard({ messages }: MessageBoardProps) {
 
   return (
     <div className="h-full flex flex-col overflow-hidden text-white">
-      <div className="flex items-center justify-between flex-shrink-0 mb-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-white/10 border border-white/20">
-            <MessageSquare className="w-5 h-5 text-orange-300" />
-          </div>
-          <div>
-            <h2 className="text-lg font-display font-bold text-white">
-              Avisos do Condomínio
-            </h2>
-            <p className="text-xs text-white/60 leading-tight">
-              {isUrgent ? "Urgente" : "Aviso"}
-            </p>
-          </div>
-        </div>
-        <div className="text-white/50 text-sm">
-          {(isUrgent ? urgentIndex : normalIndex) + 1} /{" "}
-          {isUrgent ? urgentMessages.length : normalMessages.length}
-        </div>
-      </div>
-
       {isUrgent ? (
-        <UrgentCard message={currentMessage} />
+        <UrgentCard
+          message={currentMessage}
+          index={urgentIndex}
+          total={urgentMessages.length}
+        />
       ) : (
-        <MessageCardLarge message={currentMessage} />
+        <MessageCardLarge
+          message={currentMessage}
+          index={normalIndex}
+          total={normalMessages.length}
+        />
       )}
 
       {/* Progress bar */}
@@ -167,58 +154,80 @@ export function MessageBoard({ messages }: MessageBoardProps) {
 }
 
 // Componente de card de mensagem (grande - fullscreen)
-function MessageCardLarge({ message }: { message: Message }) {
+function MessageCardLarge({
+  message,
+  index = 0,
+  total = 1,
+}: {
+  message: Message;
+  index?: number;
+  total?: number;
+}) {
   return (
-    <Card className="h-full overflow-hidden bg-white/5 border border-white/15 shadow-lg">
-      <div className="h-full p-7 flex flex-col">
-        <div className="flex items-center gap-2 flex-shrink-0">
+    <div className="h-full p-6 flex flex-col bg-gradient-to-br from-slate-800/50 to-slate-900/30 rounded-2xl border border-white/10">
+      <div className="flex items-center justify-between gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
           <MessageSquare className="w-6 h-6 text-orange-300" />
           <span className="text-xs bg-white/10 text-orange-100 px-3 py-1 rounded-full font-medium border border-white/20">
             Aviso do síndico
           </span>
         </div>
-        <h2 className="text-2xl text-white mt-4 leading-tight font-semibold flex-shrink-0 line-clamp-2">
-          {message.title}
-        </h2>
-        <div className="flex-1 overflow-hidden">
-          <div
-            className="text-white/90 text-lg leading-relaxed line-clamp-[20]"
-            dangerouslySetInnerHTML={{ __html: message.content }}
-          />
-        </div>
-        <div className="flex items-center gap-2 text-white/60 flex-shrink-0">
-          <Clock className="w-5 h-5" />
-          <span className="text-base">{formatDate(message.createdAt)}</span>
-        </div>
+        <span className="text-xs text-white/60">
+          {index + 1} / {total}
+        </span>
       </div>
-    </Card>
+      <h2 className="text-3xl text-white mt-4 leading-tight font-bold flex-shrink-0">
+        {message.title}
+      </h2>
+      <div className="flex-1 overflow-y-auto mt-4">
+        <div
+          className="text-white/90 text-lg leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: message.content }}
+        />
+      </div>
+      <div className="flex items-center gap-2 text-white/60 flex-shrink-0 mt-4">
+        <Clock className="w-5 h-5" />
+        <span className="text-sm">{formatDate(message.createdAt)}</span>
+      </div>
+    </div>
   );
 }
 
-function UrgentCard({ message }: { message: Message }) {
+function UrgentCard({
+  message,
+  index = 0,
+  total = 1,
+}: {
+  message: Message;
+  index?: number;
+  total?: number;
+}) {
   return (
-    <Card className="h-full overflow-hidden border border-white/20 bg-gradient-to-br from-red-700 to-orange-600 shadow-xl">
-      <div className="h-full p-6 flex flex-col text-white">
-        <div className="flex items-center gap-3 flex-shrink-0">
+    <div className="h-full overflow-hidden border border-white/20 bg-gradient-to-br from-red-700 to-orange-600 rounded-2xl shadow-xl p-6 flex flex-col text-white">
+      <div className="flex items-center justify-between gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3">
           <AlertTriangle className="w-6 h-6 text-white" />
           <span className="text-sm bg-black/30 text-white px-3 py-1 rounded-full font-semibold">
             URGENTE
           </span>
         </div>
-        <h3 className="text-2xl mt-3 leading-tight font-semibold flex-shrink-0 drop-shadow line-clamp-2">
-          {message.title}
-        </h3>
-        <div className="flex-1 overflow-hidden">
-          <div
-            className="text-lg leading-relaxed text-white/90 line-clamp-[20]"
-            dangerouslySetInnerHTML={{ __html: message.content }}
-          />
-        </div>
-        <div className="flex items-center gap-2 text-white/80 flex-shrink-0">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm">{formatDate(message.createdAt)}</span>
-        </div>
+        <span className="text-xs text-white/60">
+          {index + 1} / {total}
+        </span>
       </div>
-    </Card>
+      <h3 className="text-3xl mt-3 leading-tight font-bold flex-shrink-0 drop-shadow">
+        {message.title}
+      </h3>
+      <div className="flex-1 overflow-y-auto mt-4">
+        <div
+          className="text-lg leading-relaxed text-white/95"
+          dangerouslySetInnerHTML={{ __html: message.content }}
+        />
+      </div>
+      <div className="flex items-center gap-2 text-white/80 flex-shrink-0 mt-4">
+        <Clock className="w-4 h-4" />
+        <span className="text-sm">{formatDate(message.createdAt)}</span>
+      </div>
+    </div>
   );
 }
