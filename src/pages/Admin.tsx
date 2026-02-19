@@ -63,13 +63,15 @@ function getRoleFromToken(token: string | null): string | null {
   try {
     const json = atob(padded);
     const data = JSON.parse(json) as Record<string, unknown>;
-    console.log('[getRoleFromToken] Decoded payload:', data);
-    
+    console.log("[getRoleFromToken] Decoded payload:", data);
+
     // Try both "role" and the ClaimTypes.Role URI
-    const role = data.role || data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    const role =
+      data.role ||
+      data["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
     return typeof role === "string" ? role : null;
   } catch {
-    console.error('[getRoleFromToken] Failed to decode token');
+    console.error("[getRoleFromToken] Failed to decode token");
     return null;
   }
 }
@@ -137,9 +139,9 @@ export function Admin() {
 
   useEffect(() => {
     const role = getRoleFromToken(token);
-    console.log('[Admin] Token:', token?.substring(0, 50) + '...');
-    console.log('[Admin] Role from token:', role);
-    console.log('[Admin] isDeveloper:', role?.toLowerCase() === "developer");
+    console.log("[Admin] Token:", token?.substring(0, 50) + "...");
+    console.log("[Admin] Role from token:", role);
+    console.log("[Admin] isDeveloper:", role?.toLowerCase() === "developer");
     setIsDeveloper(role?.toLowerCase() === "developer");
   }, [token]);
 
@@ -190,9 +192,7 @@ export function Admin() {
 
   const handleToggleSource = async (id: number) => {
     const updated = newsSources.map((source) =>
-      source.id === id
-        ? { ...source, habilitado: !source.habilitado }
-        : source,
+      source.id === id ? { ...source, habilitado: !source.habilitado } : source,
     );
 
     if (updated.filter((s) => s.habilitado).length === 0) {
@@ -208,7 +208,9 @@ export function Admin() {
         updated.map((s) => ({ chave: s.chave, habilitado: s.habilitado })),
       );
       const source = updated.find((s) => s.id === id);
-      toast.success(`${source?.nome} ${source?.habilitado ? "ativado" : "desativado"}`);
+      toast.success(
+        `${source?.nome} ${source?.habilitado ? "ativado" : "desativado"}`,
+      );
     } catch (err) {
       console.error("Erro ao atualizar fontes:", err);
       toast.error("Erro ao salvar preferencia de fonte");
