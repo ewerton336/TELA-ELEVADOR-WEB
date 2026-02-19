@@ -32,7 +32,9 @@ function mapAvisoToMessage(aviso: AvisoDto): Message {
     id: String(aviso.id),
     title: aviso.titulo,
     content: aviso.mensagem,
-    priority: (aviso.prioridade === "urgent" ? "urgent" : "normal") as MessagePriority,
+    priority: (aviso.prioridade === "urgent"
+      ? "urgent"
+      : "normal") as MessagePriority,
     active: aviso.ativo,
     createdAt: aviso.criadoEm,
     updatedAt: aviso.criadoEm,

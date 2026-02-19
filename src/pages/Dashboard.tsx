@@ -68,7 +68,7 @@ export function Dashboard() {
         // Define variável CSS customizada para uso no layout dinâmico
         document.documentElement.style.setProperty(
           "--message-board-height",
-          `${height}px`
+          `${height}px`,
         );
       }
     };
@@ -192,41 +192,44 @@ export function Dashboard() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_35%),radial-gradient(circle_at_80%_0,rgba(255,115,29,0.08),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(88,28,135,0.12),transparent_35%)]" />
 
           <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4 dashboard-grid">
-          {/* Coluna de avisos à esquerda */}
-          <aside className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos" ref={messageBoardRef}>
-            <div className="h-full px-4 py-3">
-              <MessageBoard messages={messages} />
-            </div>
-          </aside>
+            {/* Coluna de avisos à esquerda */}
+            <aside
+              className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos"
+              ref={messageBoardRef}
+            >
+              <div className="h-full px-4 py-3">
+                <MessageBoard messages={messages} />
+              </div>
+            </aside>
 
-          {/* Barra superior com relogio, clima e status */}
-          <header className="flex items-center justify-between gap-3 px-2 dashboard-header">
-            <DigitalClock />
+            {/* Barra superior com relogio, clima e status */}
+            <header className="flex items-center justify-between gap-3 px-2 dashboard-header">
+              <DigitalClock />
 
-            <div className="flex items-center gap-3">
-              <div className="max-w-sm">
-                <WeatherCard
-                  data={weatherData ?? null}
-                  isLoading={weatherLoading}
-                  compact
+              <div className="flex items-center gap-3">
+                <div className="max-w-sm">
+                  <WeatherCard
+                    data={weatherData ?? null}
+                    isLoading={weatherLoading}
+                    compact
+                  />
+                </div>
+
+                <ConnectionStatus
+                  isOnline={isOnline}
+                  isSyncing={isSyncing}
+                  lastSyncAt={lastSyncAt}
                 />
               </div>
+            </header>
 
-              <ConnectionStatus
-                isOnline={isOnline}
-                isSyncing={isSyncing}
-                lastSyncAt={lastSyncAt}
-              />
+            {/* Carrossel de noticias */}
+            <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-xl dashboard-news">
+              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} />
             </div>
-          </header>
-
-          {/* Carrossel de noticias */}
-          <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-xl dashboard-news">
-            <NewsCarousel data={newsData ?? null} isLoading={newsLoading} />
           </div>
-        </div>
 
-        {/* Créditos do desenvolvedor */}
+          {/* Créditos do desenvolvedor */}
           <div className="absolute bottom-2 right-4 z-20">
             <p className="text-white/100 text-[10px]">
               Desenvolvido por Ewerton Guimarães • (13) 99782-7870
