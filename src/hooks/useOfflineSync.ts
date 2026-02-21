@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchWeather } from "@/services/weatherService";
+import { fetchWeatherBySlug } from "@/services/weatherService";
 import { fetchNews } from "@/services/newsService";
 
 interface OfflineSyncState {
@@ -17,16 +17,33 @@ export function useOfflineSync() {
     syncError: null,
   });
 
-  const syncData = useCallback(async () => {
+  // Verificar conectividade real com o backend
+  const checkRealConnectivity = useCallback(async (): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch("/api/gramado/predio", {
+        method: "GET",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
+  const syncData = useCallback(async (slug: string = "gramado") => {
     if (!navigator.onLine) return;
 
     setState((prev) => ({ ...prev, isSyncing: true, syncError: null }));
 
     try {
-      // Sincroniza clima e notícias em paralelo
       await Promise.all([
-        fetchWeather(),
-        fetchNews(),
+        fetchWeatherBySlug(slug).catch(() => null),
+        fetchNews().catch(() => null),
       ]);
 
       setState((prev) => ({
@@ -39,17 +56,20 @@ export function useOfflineSync() {
       setState((prev) => ({
         ...prev,
         isSyncing: false,
-        syncError: error instanceof Error ? error.message : "Erro ao sincronizar",
+        syncError:
+          error instanceof Error ? error.message : "Erro ao sincronizar",
       }));
     }
   }, []);
 
-  // Monitora mudanças de conexão
+  // Event listeners para online/offline
   useEffect(() => {
-    const handleOnline = () => {
-      setState((prev) => ({ ...prev, isOnline: true }));
-      // Tenta sincronizar quando reconecta
-      syncData();
+    const handleOnline = async () => {
+      const isReallyOnline = await checkRealConnectivity();
+      if (isReallyOnline) {
+        setState((prev) => ({ ...prev, isOnline: true }));
+        syncData();
+      }
     };
 
     const handleOffline = () => {
@@ -63,23 +83,37 @@ export function useOfflineSync() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [syncData]);
+  }, [checkRealConnectivity, syncData]);
+
+  // Polling periódico para verificar conectividade (a cada 30 segundos)
+  useEffect(() => {
+    const pollConnectivity = async () => {
+      const isReallyOnline = await checkRealConnectivity();
+      setState((prev) => ({
+        ...prev,
+        isOnline: isReallyOnline,
+      }));
+    };
+
+    pollConnectivity();
+    const intervalId = setInterval(pollConnectivity, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [checkRealConnectivity]);
 
   // Sincronização automática a cada 5 minutos quando online
   useEffect(() => {
     if (!state.isOnline) return;
 
-    const interval = setInterval(() => {
-      syncData();
-    }, 5 * 60 * 1000); // 5 minutos
+    const intervalId = setInterval(
+      () => {
+        syncData("gramado");
+      },
+      1000 * 60 * 5,
+    );
 
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalId);
   }, [state.isOnline, syncData]);
-
-  // Sincroniza ao montar
-  useEffect(() => {
-    syncData();
-  }, [syncData]);
 
   return {
     ...state,

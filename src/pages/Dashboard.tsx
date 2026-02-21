@@ -8,13 +8,13 @@ import { MessageBoard } from "@/components/MessageBoard";
 import { NewsCarousel } from "@/components/NewsCarousel";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import {
-  fetchWeather,
+  fetchWeatherBySlug,
   getCachedWeather,
   WeatherData,
 } from "@/services/weatherService";
 import { fetchNews, getCachedNews, NewsData } from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
-import { getPredio, OrientationMode } from "@/services/predioService";
+import { getPredio, OrientationMode, Predio } from "@/services/predioService";
 
 export function Dashboard() {
   const { isOnline, isSyncing, lastSyncAt } = useOfflineSync();
@@ -23,6 +23,7 @@ export function Dashboard() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
+  const [predio, setPredio] = useState<Predio | null>(null);
   const messageBoardRef = useRef<HTMLDivElement>(null);
   const [messageBoardHeight, setMessageBoardHeight] = useState(0);
 
@@ -35,9 +36,10 @@ export function Dashboard() {
   useEffect(() => {
     const loadPredio = async () => {
       try {
-        const predio = await getPredio(slug ?? "gramado");
-        document.title = predio.nome;
-        setOrientationMode(predio.orientationMode ?? "auto");
+        const predioData = await getPredio(slug ?? "gramado");
+        setPredio(predioData);
+        document.title = predioData.nome;
+        setOrientationMode(predioData.orientationMode ?? "auto");
       } catch (err) {
         console.error("Erro ao carregar predio:", err);
       }
@@ -122,19 +124,21 @@ export function Dashboard() {
     isLoading: weatherLoading,
     error: weatherError,
   } = useQuery<WeatherData | null>({
-    queryKey: ["weather"],
-    initialData: getCachedWeather() ?? undefined,
+    queryKey: ["weather", slug],
+    initialData: slug ? (getCachedWeather(slug) ?? undefined) : undefined,
     queryFn: async () => {
+      if (!slug) return null;
       try {
-        const result = await fetchWeather();
+        const result = await fetchWeatherBySlug(slug);
         return result;
       } catch (err) {
         // Se falhar, tenta retornar do cache
-        const cached = getCachedWeather();
+        const cached = getCachedWeather(slug);
         if (cached) return cached;
         throw err;
       }
     },
+    enabled: !!slug,
     staleTime: 1000 * 60 * 30, // 30 minutos
     refetchInterval: 1000 * 60 * 60, // 1 hora
     retry: 3,
@@ -204,7 +208,7 @@ export function Dashboard() {
 
             {/* Barra superior com relogio, clima e status */}
             <header className="flex items-center justify-between gap-3 px-2 dashboard-header">
-              <DigitalClock />
+              <DigitalClock predio={predio} />
 
               <div className="flex items-center gap-3">
                 <div className="max-w-sm">

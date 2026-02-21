@@ -22,7 +22,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -40,6 +39,7 @@ import {
 } from "@/components/ui/tabs";
 import * as masterService from "@/services/masterService";
 import { messageService } from "@/services/messageService";
+import { CidadeSelector } from "@/components/CidadeSelector";
 
 export default function Master() {
   const [loginUsername, setLoginUsername] = useState("");
@@ -92,14 +92,18 @@ export default function Master() {
     e.preventDefault();
     setLoading(true);
     try {
+      console.log("Tentando login com:", { loginUsername, loginPassword });
       const response = await messageService.login(loginUsername, loginPassword);
+      console.log("Login response:", response);
       const newToken = response.token;
+      console.log("Token recebido:", newToken);
       setToken(newToken);
       localStorage.setItem("developerToken", newToken);
       setLoginUsername("");
       setLoginPassword("");
       toast.success("Login realizado com sucesso");
     } catch (error) {
+      console.error("Erro no login:", error);
       toast.error(
         error instanceof Error ? error.message : "Erro ao fazer login",
       );
@@ -119,9 +123,12 @@ export default function Master() {
   const loadPredios = async () => {
     setPredioLoading(true);
     try {
+      console.log("Carregando prédios com token:", token);
       const data = await masterService.getPredios(token);
+      console.log("Prédios carregados:", data);
       setPredios(data);
     } catch (error) {
+      console.error("Erro ao carregar prédios:", error);
       toast.error("Erro ao carregar predios");
     } finally {
       setPredioLoading(false);
@@ -340,84 +347,15 @@ export default function Master() {
                     Crie, edite ou delete prédios
                   </CardDescription>
                 </div>
-                <Dialog open={showPredioDialog} onOpenChange={setShowPredioDialog}>
-                  <DialogTrigger asChild>
-                    <Button
-                      onClick={() => {
-                        setPredioForm({ slug: "", nome: "", cidade: "" });
-                        setEditingPredioId(null);
-                      }}
-                    >
-                      + Novo Prédio
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingPredioId ? "Editar" : "Novo"} Prédio
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="slug">Slug</Label>
-                        <Input
-                          id="slug"
-                          value={predioForm.slug}
-                          onChange={(e) =>
-                            setPredioForm({
-                              ...predioForm,
-                              slug: e.target.value,
-                            })
-                          }
-                          placeholder="ex: gramado"
-                          disabled={editingPredioId !== null}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="nome">Nome</Label>
-                        <Input
-                          id="nome"
-                          value={predioForm.nome}
-                          onChange={(e) =>
-                            setPredioForm({
-                              ...predioForm,
-                              nome: e.target.value,
-                            })
-                          }
-                          placeholder="ex: Edificio Central"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cidade">Cidade</Label>
-                        <Input
-                          id="cidade"
-                          value={predioForm.cidade}
-                          onChange={(e) =>
-                            setPredioForm({
-                              ...predioForm,
-                              cidade: e.target.value,
-                            })
-                          }
-                          placeholder="ex: Gramado"
-                        />
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowPredioDialog(false)}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button
-                          onClick={handleSavePredio}
-                          disabled={predioLoading}
-                        >
-                          {predioLoading ? "Salvando..." : "Salvar"}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  onClick={() => {
+                    setPredioForm({ slug: "", nome: "", cidade: "" });
+                    setEditingPredioId(null);
+                    setShowPredioDialog(true);
+                  }}
+                >
+                  + Novo Prédio
+                </Button>
               </CardHeader>
               <CardContent>
                 {predioLoading ? (
@@ -468,6 +406,72 @@ export default function Master() {
                 )}
               </CardContent>
             </Card>
+
+            <Dialog open={showPredioDialog} onOpenChange={setShowPredioDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingPredioId ? "Editar" : "Novo"} Prédio
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">Slug</Label>
+                    <Input
+                      id="slug"
+                      value={predioForm.slug}
+                      onChange={(e) =>
+                        setPredioForm({
+                          ...predioForm,
+                          slug: e.target.value,
+                        })
+                      }
+                      placeholder="ex: gramado"
+                      disabled={editingPredioId !== null}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nome">Nome</Label>
+                    <Input
+                      id="nome"
+                      value={predioForm.nome}
+                      onChange={(e) =>
+                        setPredioForm({
+                          ...predioForm,
+                          nome: e.target.value,
+                        })
+                      }
+                      placeholder="ex: Edificio Central"
+                    />
+                  </div>
+                  <CidadeSelector
+                    value={predioForm.cidade}
+                    onChange={(value) =>
+                      setPredioForm({
+                        ...predioForm,
+                        cidade: value,
+                      })
+                    }
+                    required={true}
+                    disabled={false}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowPredioDialog(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleSavePredio}
+                      disabled={predioLoading}
+                    >
+                      {predioLoading ? "Salvando..." : "Salvar"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="sindicos">
@@ -511,80 +515,15 @@ export default function Master() {
                   {selectedPredioForSindicos && (
                     <>
                       <div className="flex justify-end">
-                        <Dialog
-                          open={showSindicoDialog}
-                          onOpenChange={setShowSindicoDialog}
+                        <Button
+                          onClick={() => {
+                            setSindicoForm({ usuario: "", senha: "" });
+                            setEditingSindicoId(null);
+                            setShowSindicoDialog(true);
+                          }}
                         >
-                          <DialogTrigger asChild>
-                            <Button
-                              onClick={() => {
-                                setSindicoForm({ usuario: "", senha: "" });
-                                setEditingSindicoId(null);
-                              }}
-                            >
-                              + Novo Sindico
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>
-                                {editingSindicoId ? "Editar" : "Novo"} Sindico
-                              </DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="usuario">Usuário</Label>
-                                <Input
-                                  id="usuario"
-                                  value={sindicoForm.usuario}
-                                  onChange={(e) =>
-                                    setSindicoForm({
-                                      ...sindicoForm,
-                                      usuario: e.target.value,
-                                    })
-                                  }
-                                  placeholder="ex: admin@edificio.com"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="senha">
-                                  Senha
-                                  {editingSindicoId && (
-                                    <span className="text-sm text-slate-500 ml-2">
-                                      (deixe em branco para não alterar)
-                                    </span>
-                                  )}
-                                </Label>
-                                <Input
-                                  id="senha"
-                                  type="password"
-                                  value={sindicoForm.senha}
-                                  onChange={(e) =>
-                                    setSindicoForm({
-                                      ...sindicoForm,
-                                      senha: e.target.value,
-                                    })
-                                  }
-                                  placeholder="ex: senha123"
-                                />
-                              </div>
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setShowSindicoDialog(false)}
-                                >
-                                  Cancelar
-                                </Button>
-                                <Button
-                                  onClick={handleSaveSindico}
-                                  disabled={sindicoLoading}
-                                >
-                                  {sindicoLoading ? "Salvando..." : "Salvar"}
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                          + Novo Sindico
+                        </Button>
                       </div>
 
                       {sindicoLoading ? (
@@ -640,6 +579,71 @@ export default function Master() {
                 </div>
               </CardContent>
             </Card>
+
+            <Dialog
+              open={showSindicoDialog}
+              onOpenChange={setShowSindicoDialog}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingSindicoId ? "Editar" : "Novo"} Sindico
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="usuario">Usuário</Label>
+                    <Input
+                      id="usuario"
+                      value={sindicoForm.usuario}
+                      onChange={(e) =>
+                        setSindicoForm({
+                          ...sindicoForm,
+                          usuario: e.target.value,
+                        })
+                      }
+                      placeholder="ex: admin@edificio.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="senha">
+                      Senha
+                      {editingSindicoId && (
+                        <span className="text-sm text-slate-500 ml-2">
+                          (deixe em branco para não alterar)
+                        </span>
+                      )}
+                    </Label>
+                    <Input
+                      id="senha"
+                      type="password"
+                      value={sindicoForm.senha}
+                      onChange={(e) =>
+                        setSindicoForm({
+                          ...sindicoForm,
+                          senha: e.target.value,
+                        })
+                      }
+                      placeholder="ex: senha123"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowSindicoDialog(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleSaveSindico}
+                      disabled={sindicoLoading}
+                    >
+                      {sindicoLoading ? "Salvando..." : "Salvar"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
       </div>

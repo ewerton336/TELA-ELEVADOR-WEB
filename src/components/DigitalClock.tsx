@@ -1,7 +1,12 @@
 import { useClock } from "@/hooks/useClock";
 import { Building2 } from "lucide-react";
+import { Predio } from "@/services/predioService";
 
-export function DigitalClock() {
+interface DigitalClockProps {
+  predio: Predio | null;
+}
+
+export function DigitalClock({ predio }: DigitalClockProps) {
   const { timeFormatted, seconds, dateFormatted } = useClock();
 
   return (
@@ -13,9 +18,9 @@ export function DigitalClock() {
         </div>
         <div className="hidden sm:block">
           <p className="text-white font-display font-semibold text-sm">
-            Gramado IX
+            {predio?.nome || "Carregando..."}
           </p>
-          <p className="text-white/50 text-[10px]">Praia Grande, SP</p>
+          <p className="text-white/50 text-[10px]">{predio?.cidade || ""}</p>
         </div>
       </div>
 

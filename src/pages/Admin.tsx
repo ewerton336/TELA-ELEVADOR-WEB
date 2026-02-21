@@ -47,10 +47,16 @@ import {
   Clock,
   Newspaper,
   Rss,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as predioAdminService from "@/services/predioAdminService";
 import type { OrientationMode } from "@/services/predioService";
+import {
+  forceLoadNews,
+  getNewsStats,
+  type NewsStatsResponse,
+} from "@/services/newsHealthCheckService";
 
 function getRoleFromToken(token: string | null): string | null {
   if (!token) return null;
@@ -95,6 +101,9 @@ export function Admin() {
 
   // News sources state
   const [newsSources, setNewsSources] = useState<FonteNoticiaAdmin[]>([]);
+  const [newsStats, setNewsStats] = useState<NewsStatsResponse>({});
+  const [loadingHealthcheck, setLoadingHealthcheck] = useState<Record<string, boolean>>({});
+  const [loadingAllHealthcheck, setLoadingAllHealthcheck] = useState(false);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
   const [isDeveloper, setIsDeveloper] = useState(false);
@@ -128,6 +137,7 @@ export function Admin() {
     if (isAuthenticated) {
       loadMessages();
       loadFontes();
+      loadStats();
     }
   }, [isAuthenticated]);
 
@@ -187,6 +197,66 @@ export function Admin() {
     } catch (err) {
       console.error("Erro ao carregar fontes:", err);
       toast.error("Erro ao carregar fontes de noticia");
+    }
+  };
+
+  const loadStats = async () => {
+    if (!token) return;
+    
+    try {
+      const stats = await getNewsStats(token);
+      setNewsStats(stats);
+    } catch (err) {
+      console.error("Erro ao carregar stats de noticias:", err);
+      // Não mostrar toast aqui para não poluir a UI
+    }
+  };
+
+  const handleForceLoad = async (fonteChave?: string) => {
+    if (!token) return;
+
+    const loadingKey = fonteChave || "all";
+    
+    if (fonteChave) {
+      setLoadingHealthcheck((prev) => ({ ...prev, [fonteChave]: true }));
+    } else {
+      setLoadingAllHealthcheck(true);
+    }
+
+    try {
+      const result = await forceLoadNews(token, fonteChave);
+      
+      // Recarregar stats após healthcheck
+      await loadStats();
+
+      const total = result.total;
+      
+      if (total === 0) {
+        toast.info("Nenhuma notícia nova encontrada");
+      } else if (fonteChave) {
+        const count = result.fontesCarregadas[fonteChave] || 0;
+        const fonte = newsSources.find((s) => s.chave === fonteChave);
+        toast.success(`${count} notícia${count !== 1 ? "s" : ""} nova${count !== 1 ? "s" : ""} carregada${count !== 1 ? "s" : ""} de ${fonte?.nome || fonteChave}`);
+      } else {
+        const detalhes = Object.entries(result.fontesCarregadas)
+          .filter(([_, count]) => count > 0)
+          .map(([fonte, count]) => `${fonte}: ${count}`)
+          .join(", ");
+        
+        toast.success(
+          `${total} notícia${total !== 1 ? "s" : ""} nova${total !== 1 ? "s" : ""} carregada${total !== 1 ? "s" : ""}${detalhes ? ` (${detalhes})` : ""}`
+        );
+      }
+    } catch (err) {
+      console.error("Erro ao forçar carregamento:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      toast.error(`Erro ao forçar carregamento: ${errorMessage}`);
+    } finally {
+      if (fonteChave) {
+        setLoadingHealthcheck((prev) => ({ ...prev, [fonteChave]: false }));
+      } else {
+        setLoadingAllHealthcheck(false);
+      }
     }
   };
 
@@ -484,14 +554,28 @@ export function Admin() {
       {/* Fontes de Notícias */}
       <Card className="glass-card border-white/10 mb-4">
         <CardHeader className="flex-row items-center justify-between py-3 px-4">
-          <CardTitle className="text-white flex items-center gap-2 text-sm">
-            <Newspaper className="w-4 h-4" />
-            Fontes de Notícias
-          </CardTitle>
-          <span className="text-white/40 text-xs">
-            {newsSources.filter((s) => s.habilitado).length} de{" "}
-            {newsSources.length} ativas
-          </span>
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-white flex items-center gap-2 text-sm">
+              <Newspaper className="w-4 h-4" />
+              Fontes de Notícias
+            </CardTitle>
+            <span className="text-white/40 text-xs">
+              {newsSources.filter((s) => s.habilitado).length} de{" "}
+              {newsSources.length} ativas
+            </span>
+          </div>
+          {isDeveloper && (
+            <Button
+              onClick={() => handleForceLoad()}
+              size="sm"
+              variant="outline"
+              disabled={loadingAllHealthcheck}
+              className="h-7 text-xs bg-transparent border-white/20 text-white hover:bg-white/10"
+            >
+              <RefreshCw className={`w-3 h-3 mr-1 ${loadingAllHealthcheck ? "animate-spin" : ""}`} />
+              Atualizar Todas
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <p className="text-white/50 text-xs mb-3">
@@ -502,44 +586,66 @@ export function Admin() {
             {newsSources.map((source) => (
               <div
                 key={source.id}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                className={`flex flex-col p-3 rounded-lg border transition-all ${
                   source.habilitado
                     ? "border-green-500/30 bg-green-500/10"
                     : "border-white/10 bg-white/5 opacity-60"
                 }`}
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      source.habilitado ? "bg-green-500/20" : "bg-white/10"
-                    }`}
-                  >
-                    <Rss
-                      className={`w-4 h-4 ${
-                        source.habilitado ? "text-green-400" : "text-white/40"
-                      }`}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p
-                      className={`font-medium text-sm truncate ${
-                        source.habilitado ? "text-white" : "text-white/50"
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        source.habilitado ? "bg-green-500/20" : "bg-white/10"
                       }`}
                     >
-                      {source.nome}
-                    </p>
-                    <p className="text-white/30 text-[10px] truncate">
-                      {source.urlBase
-                        .replace("https://", "")
-                        .replace("http://", "")
-                        .slice(0, 40)}
-                    </p>
+                      <Rss
+                        className={`w-4 h-4 ${
+                          source.habilitado ? "text-green-400" : "text-white/40"
+                        }`}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`font-medium text-sm truncate ${
+                          source.habilitado ? "text-white" : "text-white/50"
+                        }`}
+                      >
+                        {source.nome}
+                      </p>
+                      <p className="text-white/30 text-[10px] truncate">
+                        {source.urlBase
+                          .replace("https://", "")
+                          .replace("http://", "")
+                          .slice(0, 40)}
+                      </p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={source.habilitado}
+                    onCheckedChange={() => handleToggleSource(source.id)}
+                  />
                 </div>
-                <Switch
-                  checked={source.habilitado}
-                  onCheckedChange={() => handleToggleSource(source.id)}
-                />
+                
+                <div className="flex items-center justify-between gap-2 mt-1 pt-2 border-t border-white/10">
+                  <span className="text-white/40 text-[10px]">
+                    {newsStats[source.chave] !== undefined 
+                      ? `${newsStats[source.chave]} notícia${newsStats[source.chave] !== 1 ? "s" : ""}`
+                      : "Carregando..."}
+                  </span>
+                  {isDeveloper && (
+                    <Button
+                      onClick={() => handleForceLoad(source.chave)}
+                      size="sm"
+                      variant="ghost"
+                      disabled={loadingHealthcheck[source.chave]}
+                      className="h-6 px-2 text-[10px] text-white/60 hover:text-white hover:bg-white/10"
+                    >
+                      <RefreshCw className={`w-3 h-3 mr-1 ${loadingHealthcheck[source.chave] ? "animate-spin" : ""}`} />
+                      Forçar
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
