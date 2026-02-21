@@ -61,9 +61,17 @@ export function CidadeSelector({
         {label}
         {required && <span className="text-red-500"> *</span>}
       </Label>
-      <Select value={value} onValueChange={onChange} disabled={disabled || loading}>
+      <Select
+        value={value}
+        onValueChange={onChange}
+        disabled={disabled || loading}
+      >
         <SelectTrigger>
-          <SelectValue placeholder={loading ? "Carregando cidades..." : "Selecione uma cidade"} />
+          <SelectValue
+            placeholder={
+              loading ? "Carregando cidades..." : "Selecione uma cidade"
+            }
+          />
         </SelectTrigger>
         <SelectContent>
           {cidades.map((cidade) => (

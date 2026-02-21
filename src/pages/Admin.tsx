@@ -102,7 +102,9 @@ export function Admin() {
   // News sources state
   const [newsSources, setNewsSources] = useState<FonteNoticiaAdmin[]>([]);
   const [newsStats, setNewsStats] = useState<NewsStatsResponse>({});
-  const [loadingHealthcheck, setLoadingHealthcheck] = useState<Record<string, boolean>>({});
+  const [loadingHealthcheck, setLoadingHealthcheck] = useState<
+    Record<string, boolean>
+  >({});
   const [loadingAllHealthcheck, setLoadingAllHealthcheck] = useState(false);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
@@ -202,7 +204,7 @@ export function Admin() {
 
   const loadStats = async () => {
     if (!token) return;
-    
+
     try {
       const stats = await getNewsStats(token);
       setNewsStats(stats);
@@ -216,7 +218,7 @@ export function Admin() {
     if (!token) return;
 
     const loadingKey = fonteChave || "all";
-    
+
     if (fonteChave) {
       setLoadingHealthcheck((prev) => ({ ...prev, [fonteChave]: true }));
     } else {
@@ -225,31 +227,34 @@ export function Admin() {
 
     try {
       const result = await forceLoadNews(token, fonteChave);
-      
+
       // Recarregar stats após healthcheck
       await loadStats();
 
       const total = result.total;
-      
+
       if (total === 0) {
         toast.info("Nenhuma notícia nova encontrada");
       } else if (fonteChave) {
         const count = result.fontesCarregadas[fonteChave] || 0;
         const fonte = newsSources.find((s) => s.chave === fonteChave);
-        toast.success(`${count} notícia${count !== 1 ? "s" : ""} nova${count !== 1 ? "s" : ""} carregada${count !== 1 ? "s" : ""} de ${fonte?.nome || fonteChave}`);
+        toast.success(
+          `${count} notícia${count !== 1 ? "s" : ""} nova${count !== 1 ? "s" : ""} carregada${count !== 1 ? "s" : ""} de ${fonte?.nome || fonteChave}`,
+        );
       } else {
         const detalhes = Object.entries(result.fontesCarregadas)
           .filter(([_, count]) => count > 0)
           .map(([fonte, count]) => `${fonte}: ${count}`)
           .join(", ");
-        
+
         toast.success(
-          `${total} notícia${total !== 1 ? "s" : ""} nova${total !== 1 ? "s" : ""} carregada${total !== 1 ? "s" : ""}${detalhes ? ` (${detalhes})` : ""}`
+          `${total} notícia${total !== 1 ? "s" : ""} nova${total !== 1 ? "s" : ""} carregada${total !== 1 ? "s" : ""}${detalhes ? ` (${detalhes})` : ""}`,
         );
       }
     } catch (err) {
       console.error("Erro ao forçar carregamento:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      const errorMessage =
+        err instanceof Error ? err.message : "Erro desconhecido";
       toast.error(`Erro ao forçar carregamento: ${errorMessage}`);
     } finally {
       if (fonteChave) {
@@ -572,7 +577,9 @@ export function Admin() {
               disabled={loadingAllHealthcheck}
               className="h-7 text-xs bg-transparent border-white/20 text-white hover:bg-white/10"
             >
-              <RefreshCw className={`w-3 h-3 mr-1 ${loadingAllHealthcheck ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-3 h-3 mr-1 ${loadingAllHealthcheck ? "animate-spin" : ""}`}
+              />
               Atualizar Todas
             </Button>
           )}
@@ -626,10 +633,10 @@ export function Admin() {
                     onCheckedChange={() => handleToggleSource(source.id)}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between gap-2 mt-1 pt-2 border-t border-white/10">
                   <span className="text-white/40 text-[10px]">
-                    {newsStats[source.chave] !== undefined 
+                    {newsStats[source.chave] !== undefined
                       ? `${newsStats[source.chave]} notícia${newsStats[source.chave] !== 1 ? "s" : ""}`
                       : "Carregando..."}
                   </span>
@@ -641,7 +648,9 @@ export function Admin() {
                       disabled={loadingHealthcheck[source.chave]}
                       className="h-6 px-2 text-[10px] text-white/60 hover:text-white hover:bg-white/10"
                     >
-                      <RefreshCw className={`w-3 h-3 mr-1 ${loadingHealthcheck[source.chave] ? "animate-spin" : ""}`} />
+                      <RefreshCw
+                        className={`w-3 h-3 mr-1 ${loadingHealthcheck[source.chave] ? "animate-spin" : ""}`}
+                      />
                       Forçar
                     </Button>
                   )}

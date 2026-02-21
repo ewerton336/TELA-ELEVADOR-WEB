@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3003";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3003";
 
 export interface HealthCheckResponse {
   success: boolean;
@@ -21,14 +22,17 @@ export async function forceLoadNews(
 ): Promise<HealthCheckResponse> {
   const body = fonteChave ? JSON.stringify({ fonteChave }) : undefined;
 
-  const response = await fetch(`${API_BASE_URL}/api/admin/noticia/healthcheck`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${API_BASE_URL}/api/admin/noticia/healthcheck`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body,
     },
-    body,
-  });
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

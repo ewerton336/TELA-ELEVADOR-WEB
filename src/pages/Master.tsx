@@ -31,12 +31,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as masterService from "@/services/masterService";
 import { messageService } from "@/services/messageService";
 import { CidadeSelector } from "@/components/CidadeSelector";
@@ -462,10 +457,7 @@ export default function Master() {
                     >
                       Cancelar
                     </Button>
-                    <Button
-                      onClick={handleSavePredio}
-                      disabled={predioLoading}
-                    >
+                    <Button onClick={handleSavePredio} disabled={predioLoading}>
                       {predioLoading ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
@@ -487,9 +479,7 @@ export default function Master() {
                   <div className="space-y-2">
                     <Label>Selecione um Prédio</Label>
                     <Select
-                      value={
-                        selectedPredioForSindicos?.toString() || "default"
-                      }
+                      value={selectedPredioForSindicos?.toString() || "default"}
                       onValueChange={(value) => {
                         if (value !== "default") {
                           loadSindicos(parseInt(value));
@@ -504,7 +494,10 @@ export default function Master() {
                           Escolha um prédio
                         </SelectItem>
                         {predios.map((predio) => (
-                          <SelectItem key={predio.id} value={predio.id.toString()}>
+                          <SelectItem
+                            key={predio.id}
+                            value={predio.id.toString()}
+                          >
                             {predio.nome} ({predio.slug})
                           </SelectItem>
                         ))}
@@ -648,9 +641,12 @@ export default function Master() {
         </Tabs>
       </div>
 
-      <AlertDialog open={predioToDelete !== null} onOpenChange={(open) => {
-        if (!open) setPredioToDelete(null);
-      }}>
+      <AlertDialog
+        open={predioToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPredioToDelete(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogTitle>Confirmar Deleção</AlertDialogTitle>
           <AlertDialogDescription>
@@ -669,9 +665,12 @@ export default function Master() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={sindicoToDelete !== null} onOpenChange={(open) => {
-        if (!open) setSindicoToDelete(null);
-      }}>
+      <AlertDialog
+        open={sindicoToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setSindicoToDelete(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogTitle>Confirmar Deleção</AlertDialogTitle>
           <AlertDialogDescription>

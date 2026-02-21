@@ -1,13 +1,13 @@
 /**
  * Teste manual da funcionalidade de Clima por Cidade
- * 
+ *
  * Estes testes devem ser executados manualmente ou via Playwright após configuração
- * 
+ *
  * Pré-requisitos:
  * 1. Backend rodando em http://localhost:5000 (API)
  * 2. Worker rodando (para processar clima)
  * 3. Frontend rodando em http://localhost:5173 (Vite dev server)
- * 
+ *
  * Fluxo de testes:
  */
 
@@ -35,7 +35,7 @@ test.describe("Funcionalidade de Clima por Cidade", () => {
     await page.click('button:has-text("Novo Prédio")');
 
     // Verificar se o seletor de cidades está visível
-    const cidadeSelect = await page.locator('text=Cidade');
+    const cidadeSelect = await page.locator("text=Cidade");
     await expect(cidadeSelect).toBeVisible();
 
     // Abrir o seletor
@@ -64,7 +64,10 @@ test.describe("Funcionalidade de Clima por Cidade", () => {
 
     // Preencher formulário
     await page.fill('input[placeholder="ex: gramado"]', "test-predio");
-    await page.fill('input[placeholder="ex: Edificio Central"]', "Prédio Teste");
+    await page.fill(
+      'input[placeholder="ex: Edificio Central"]',
+      "Prédio Teste",
+    );
 
     // Selecionar cidade
     await page.click("[role=combobox]");
@@ -92,7 +95,9 @@ test.describe("Funcionalidade de Clima por Cidade", () => {
     await page.waitForLoadState("networkidle");
 
     // Verificar se WeatherCard está visível
-    const weatherCard = await page.locator("text=/Previsão|Temperatura|Clima/i");
+    const weatherCard = await page.locator(
+      "text=/Previsão|Temperatura|Clima/i",
+    );
     await expect(weatherCard).toBeVisible({ timeout: 5000 });
 
     console.log("✓ Clima exibido no dashboard");
@@ -136,11 +141,11 @@ test.describe("Funcionalidade de Clima por Cidade", () => {
   test("Deve processar clima para cidades com prédios cadastrados", async () => {
     /**
      * Este teste requer verificar os logs do worker
-     * 
+     *
      * No console do worker (TELA-ELEVADOR-SERVER.Worker), deve aparecer:
      * - "Processando clima para 2 cidade(s) com prédio(s) cadastrado(s)" (ou mais se houver outras)
      * - "Buscando clima para [CityName]..."
-     * 
+     *
      * Validação manual:
      * 1. Rodar: dotnet run --project TELA-ELEVADOR-SERVER.Worker
      * 2. Aguardar 4 horas OU forçar a execução editando ClimaWorker para interval de 10 segundos
@@ -154,11 +159,11 @@ test.describe("Funcionalidade de Clima por Cidade", () => {
   test("Deve persistir previsões de clima no banco de dados", async () => {
     /**
      * Este teste requer acesso direto ao banco PostgreSQL
-     * 
+     *
      * Query para validar:
      * SELECT COUNT(*) FROM "ClimaPrevisoes";
      * SELECT DISTINCT "CidadeId" FROM "ClimaPrevisoes" ORDER BY "CidadeId";
-     * 
+     *
      * Deve retornar registros para ambas as cidades criadas
      */
 
@@ -168,28 +173,28 @@ test.describe("Funcionalidade de Clima por Cidade", () => {
 
 /**
  * PROCEDIMENTO DE TESTES MANUAL
- * 
+ *
  * 1. PREPARAR AMBIENTE
  *    - Limpar banco de dados (dropdb tela-elevador && createdb tela-elevador)
  *    - Executar migrations: dotnet ef database update --project TELA-ELEVADOR-SERVER.Api
  *    - Iniciar API: dotnet run --project TELA-ELEVADOR-SERVER.Api
  *    - Iniciar Worker: dotnet run --project TELA-ELEVADOR-SERVER.Worker
  *    - Iniciar Frontend: npm run dev
- * 
+ *
  * 2. VERIFICAR SEED IBGE
  *    - Query: SELECT COUNT(*) FROM "Cidade" WHERE "Estado" = 'SP';
  *    - Esperado: ~645 cidades
- * 
+ *
  * 3. FAZER LOGIN
  *    - Ir para http://localhost:5173/master
  *    - Login: ewerton / 123123
- * 
+ *
  * 4. CRIAR PRÉDIOS
  *    - Criar prédio: slug="marilia", nome="Marília", cidade="Marília, SP"
  *    - Verificar que síndico foi criado: usuario="marilia", senha="marilia"
  *    - Criar segundo prédio: slug="sorocaba", nome="Sorocaba", cidade="Sorocaba, SP"
  *    - Verificar que síndico foi criado: usuario="sorocaba", senha="sorocaba"
- * 
+ *
  * 5. VERIFICAR CLIMA
  *    - Ir para http://localhost:5173/marilia
  *    - Aguardar carregamento
