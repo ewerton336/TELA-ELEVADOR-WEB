@@ -83,18 +83,17 @@ export function NewsCarousel({ data, isLoading }: NewsCarouselProps) {
                     "https://placehold.co/1200x800/1e293b/94a3b8?text=G1";
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1b0f3f]/90 via-[#0b0724]/70 to-black/35" />
 
               {/* Conteúdo */}
               <div className="relative h-full px-6 sm:px-8 py-6 flex flex-col justify-between text-white">
                 <div className="flex items-center justify-between gap-3 text-sm text-white/80">
                   <div className="flex items-center gap-2">
-                    <div className="bg-white/10 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
+                    <div className="bg-orange-500/75 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
                       <Newspaper className="w-3.5 h-3.5 inline mr-1" />
                       {item.source}
                     </div>
                     {item.category && (
-                      <span className="bg-orange-500 text-slate-900 text-[11px] font-bold px-2 py-1 rounded shadow">
+                      <span className="bg-orange-500/75 text-slate-900 text-[11px] text-white font-bold px-2 py-1 rounded shadow">
                         {item.category}
                       </span>
                     )}
@@ -105,11 +104,11 @@ export function NewsCarousel({ data, isLoading }: NewsCarouselProps) {
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center gap-4 max-w-[72%] news-content">
-                  <h3 className="bg-orange-500 text-slate-900 font-black text-2xl sm:text-3xl md:text-4xl leading-tight px-3 py-2 rounded shadow-lg drop-shadow">
+                  <h3 className="bg-orange-500/90 text-slate-900 font-black text-2xl sm:text-3xl md:text-4xl leading-tight px-3 py-2 rounded shadow-lg drop-shadow">
                     {item.title}
                   </h3>
                   {item.description && (
-                    <p className="bg-[#231344]/80 text-orange-100 text-base sm:text-lg leading-relaxed px-3 py-5 rounded-lg shadow max-w-2xl">
+                    <p className="bg-[#231344]/90 text-orange-100 text-base sm:text-lg leading-relaxed px-3 py-5 rounded-lg shadow max-w-2xl">
                       {item.description}
                     </p>
                   )}

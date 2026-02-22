@@ -47,6 +47,29 @@ export function Dashboard() {
     loadPredio();
   }, [slug]);
 
+  // Atualiza orientação periodicamente (para pegar mudanças forçadas pelo admin/master)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const predioData = await getPredio(slug ?? "gramado");
+        const novaOrientacao = predioData.orientationMode ?? "auto";
+        setOrientationMode((prev) => {
+          if (prev !== novaOrientacao) {
+            console.log(
+              `[Dashboard] Orientação alterada: ${prev} → ${novaOrientacao}`,
+            );
+          }
+          return novaOrientacao;
+        });
+        setPredio(predioData);
+      } catch (err) {
+        console.error("Erro no polling de orientação:", err);
+      }
+    }, 10000); // A cada 10 segundos
+
+    return () => clearInterval(interval);
+  }, [slug]);
+
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("force-portrait", "force-landscape");
@@ -125,7 +148,11 @@ export function Dashboard() {
     error: weatherError,
   } = useQuery<WeatherData | null>({
     queryKey: ["weather", slug],
-    initialData: slug ? (getCachedWeather(slug) ?? undefined) : undefined,
+    initialData: slug
+      ? (getCachedWeather(slug)?.days?.length ?? 0) > 0
+        ? (getCachedWeather(slug) ?? undefined)
+        : undefined
+      : undefined,
     queryFn: async () => {
       if (!slug) return null;
       try {
@@ -139,8 +166,14 @@ export function Dashboard() {
       }
     },
     enabled: !!slug,
-    staleTime: 1000 * 60 * 30, // 30 minutos
-    refetchInterval: 1000 * 60 * 60, // 1 hora
+    staleTime: (query) =>
+      query.state.data && (query.state.data as WeatherData | null)?.days?.length
+        ? 1000 * 60 * 30  // 30 minutos se tiver dados
+        : 1000 * 30,      // 30 segundos se estiver vazio
+    refetchInterval: (query) =>
+      query.state.data && (query.state.data as WeatherData | null)?.days?.length
+        ? 1000 * 60 * 60  // 1 hora se tiver dados
+        : 1000 * 30,      // 30 segundos se estiver vazio
     retry: 3,
     retryDelay: 500,
   });

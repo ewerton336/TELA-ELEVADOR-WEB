@@ -62,8 +62,10 @@ export async function fetchWeatherBySlug(slug: string): Promise<WeatherData> {
       lastUpdated: weatherData.lastUpdated || new Date().toISOString(),
     };
 
-    // Salva no cache
-    setCache(cacheKey, normalizedData, CACHE_TTL_MINUTES);
+    // Salva no cache apenas se tiver dados válidos
+    if (normalizedData.days.length > 0) {
+      setCache(cacheKey, normalizedData, CACHE_TTL_MINUTES);
+    }
 
     return normalizedData;
   } catch (error) {

@@ -164,7 +164,7 @@ function MessageCardLarge({
   total?: number;
 }) {
   return (
-    <div className="h-full p-6 flex flex-col bg-gradient-to-br from-slate-800/50 to-slate-900/30 rounded-2xl border border-white/10">
+    <div className="h-full p-6 flex flex-col bg-gradient-to-br from-slate-800/50 to-slate-900/300 rounded-2xl border border-white/10">
       <div className="flex items-center justify-between gap-2 flex-shrink-0">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-6 h-6 text-orange-300" />

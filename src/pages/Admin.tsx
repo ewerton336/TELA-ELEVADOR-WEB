@@ -158,7 +158,7 @@ export function Admin() {
   }, [token]);
 
   useEffect(() => {
-    if (!token || !isDeveloper) {
+    if (!token) {
       return;
     }
 
@@ -171,12 +171,11 @@ export function Admin() {
         setOrientationMode(data.orientationMode ?? "auto");
       } catch (err) {
         console.error("Erro ao carregar orientacao:", err);
-        toast.error("Erro ao carregar orientacao da tela");
       }
     };
 
     loadOrientation();
-  }, [isDeveloper, slug, token]);
+  }, [slug, token]);
 
   const loadMessages = async () => {
     try {
@@ -516,8 +515,7 @@ export function Admin() {
         </Button>
       </header>
 
-      {isDeveloper && (
-        <Card className="glass-card border-white/10 mb-4">
+      <Card className="glass-card border-white/10 mb-4">
           <CardHeader className="flex-row items-center justify-between py-3 px-4">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               Modo de exibicao da tela
@@ -554,7 +552,6 @@ export function Admin() {
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Fontes de Notícias */}
       <Card className="glass-card border-white/10 mb-4">
