@@ -6,7 +6,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requestAdminJson } from "@/services/apiClient";
 
@@ -18,6 +18,7 @@ interface ScreenInfo {
   uptime: number; // seconds
   isVisible: boolean;
   userAgent?: string;
+  appVersion?: string;
 }
 
 interface ScreenMonitorProps {
@@ -47,10 +48,16 @@ function isScreenAlive(screen: ScreenInfo): boolean {
   return diff < 120_000; // 2 minutos
 }
 
+function isOutdated(screenVersion: string | undefined | null, currentVersion: string): boolean {
+  if (!screenVersion) return true;
+  return screenVersion !== currentVersion;
+}
+
 export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const [screens, setScreens] = useState<ScreenInfo[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
   const connectionRef = useRef<HubConnection | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -115,6 +122,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
         slug: string;
         uptime: number;
         isVisible: boolean;
+        appVersion?: string;
         receivedAt: string;
       }) => {
         setScreens((prev) =>
@@ -125,6 +133,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                   lastHeartbeat: hb.receivedAt,
                   uptime: hb.uptime,
                   isVisible: hb.isVisible,
+                  appVersion: hb.appVersion ?? s.appVersion,
                 }
               : s,
           ),
@@ -177,6 +186,34 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   }, {});
 
   const totalOffline = screens.filter((s) => !isScreenAlive(s)).length;
+
+  const handleForceRefresh = async (connectionId: string) => {
+    setRefreshingIds((prev) => new Set(prev).add(connectionId));
+    try {
+      await requestAdminJson(
+        "/monitor/force-refresh",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ connectionId }),
+        },
+        "forceRefresh",
+      );
+    } catch {
+      // silencioso
+    } finally {
+      setTimeout(() => {
+        setRefreshingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(connectionId);
+          return next;
+        });
+      }, 2000);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -259,6 +296,8 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                   <div className="space-y-2">
                     {slugScreens.map((screen) => {
                       const alive = isScreenAlive(screen);
+                      const outdated = isOutdated(screen.appVersion, __APP_VERSION__);
+                      const isRefreshing = refreshingIds.has(screen.connectionId);
                       return (
                         <div
                           key={screen.connectionId}
@@ -273,18 +312,35 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                               }`}
                             />
                             <div>
-                              <p className="text-sm font-medium">
-                                Tela:{" "}
-                                <span className="font-mono text-xs text-slate-500">
-                                  {screen.connectionId.slice(0, 8)}...
-                                </span>
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium">
+                                  Tela:{" "}
+                                  <span className="font-mono text-xs text-slate-500">
+                                    {screen.connectionId.slice(0, 8)}...
+                                  </span>
+                                </p>
+                                {outdated && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-orange-700">
+                                    Desatualizada
+                                  </span>
+                                )}
+                                {!outdated && screen.appVersion && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-600">
+                                    Atualizada
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-500">
                                 Conectada há {formatUptime(screen.uptime)}
                               </p>
+                              {screen.appVersion && (
+                                <p className="text-[10px] text-slate-400 font-mono">
+                                  v: {new Date(screen.appVersion).toLocaleString("pt-BR")}
+                                </p>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className="text-xs text-slate-500">
                                 Último heartbeat
@@ -311,6 +367,17 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                               )}
                               {screen.isVisible ? "Visível" : "Background"}
                             </div>
+                            <Button
+                              size="sm"
+                              variant={outdated ? "default" : "outline"}
+                              disabled={!alive || isRefreshing}
+                              onClick={() => handleForceRefresh(screen.connectionId)}
+                              title={!alive ? "Tela sem heartbeat — comando não será recebido" : "Forçar reload da tela"}
+                              className="text-xs"
+                            >
+                              <RotateCw className={`w-3.5 h-3.5 mr-1 ${isRefreshing ? "animate-spin" : ""}`} />
+                              {isRefreshing ? "Enviado" : "Atualizar"}
+                            </Button>
                           </div>
                         </div>
                       );

@@ -126,7 +126,7 @@ export function useSignalR({
 
         try {
           await connection.start();
-          await connection.invoke("JoinPredio", slug);
+          await connection.invoke("JoinPredio", slug, __APP_VERSION__);
           setIsConnected(true);
           stopFallbackPolling();
           await syncAfterReconnect();
@@ -171,6 +171,12 @@ export function useSignalR({
       }
     });
 
+    // Comando remoto: forçar atualização da tela
+    connection.on("ForceRefresh", () => {
+      console.log("[SignalR] ForceRefresh recebido — recarregando página");
+      window.location.reload();
+    });
+
     // --- Handlers de conexão ---
     connection.onreconnecting(() => {
       console.log("[SignalR] Reconectando...");
@@ -182,7 +188,7 @@ export function useSignalR({
       console.log("[SignalR] Reconectado, re-entrando no grupo");
       setIsConnected(true);
       stopFallbackPolling();
-      await connection.invoke("JoinPredio", slug);
+      await connection.invoke("JoinPredio", slug, __APP_VERSION__);
       await syncAfterReconnect();
     });
 
@@ -198,7 +204,7 @@ export function useSignalR({
     const start = async () => {
       try {
         await connection.start();
-        await connection.invoke("JoinPredio", slug);
+        await connection.invoke("JoinPredio", slug, __APP_VERSION__);
         connectionRef.current = connection;
         setIsConnected(true);
         startTimeRef.current = Date.now();
@@ -221,6 +227,7 @@ export function useSignalR({
             slug,
             uptime: (Date.now() - startTimeRef.current) / 1000,
             isVisible: document.visibilityState === "visible",
+            appVersion: __APP_VERSION__,
           })
           .catch(() => {});
       }

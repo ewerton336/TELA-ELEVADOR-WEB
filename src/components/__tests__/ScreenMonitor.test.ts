@@ -37,6 +37,11 @@ function isScreenAlive(screen: ScreenInfo): boolean {
   return diff < 120_000;
 }
 
+function isOutdated(screenVersion: string | undefined | null, currentVersion: string): boolean {
+  if (!screenVersion) return true;
+  return screenVersion !== currentVersion;
+}
+
 // -------------------------------------------------------
 // Testes
 // -------------------------------------------------------
@@ -120,5 +125,29 @@ describe("isScreenAlive", () => {
   it("deve retornar false para heartbeat antigo (>=2min)", () => {
     expect(isScreenAlive(makeScreen(120_001))).toBe(false);
     expect(isScreenAlive(makeScreen(300_000))).toBe(false);
+  });
+});
+
+describe("isOutdated", () => {
+  const currentVersion = "2026-03-06T12:00:00.000Z";
+
+  it("deve retornar true quando screenVersion é undefined", () => {
+    expect(isOutdated(undefined, currentVersion)).toBe(true);
+  });
+
+  it("deve retornar true quando screenVersion é null", () => {
+    expect(isOutdated(null, currentVersion)).toBe(true);
+  });
+
+  it("deve retornar true quando screenVersion é string vazia", () => {
+    expect(isOutdated("", currentVersion)).toBe(true);
+  });
+
+  it("deve retornar false quando versões são iguais", () => {
+    expect(isOutdated(currentVersion, currentVersion)).toBe(false);
+  });
+
+  it("deve retornar true quando versões são diferentes", () => {
+    expect(isOutdated("2026-03-05T10:00:00.000Z", currentVersion)).toBe(true);
   });
 });
