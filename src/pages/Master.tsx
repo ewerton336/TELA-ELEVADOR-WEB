@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as masterService from "@/services/masterService";
 import { messageService } from "@/services/messageService";
 import { CidadeSelector } from "@/components/CidadeSelector";
+import { ScreenMonitor } from "@/components/ScreenMonitor";
 
 export default function Master() {
   const [loginUsername, setLoginUsername] = useState("");
@@ -331,6 +332,7 @@ export default function Master() {
           <TabsList>
             <TabsTrigger value="predios">Prédios</TabsTrigger>
             <TabsTrigger value="sindicos">Sindicos</TabsTrigger>
+            <TabsTrigger value="monitor">Monitor</TabsTrigger>
           </TabsList>
 
           <TabsContent value="predios">
@@ -637,6 +639,10 @@ export default function Master() {
                 </div>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          <TabsContent value="monitor">
+            <ScreenMonitor token={token} />
           </TabsContent>
         </Tabs>
       </div>

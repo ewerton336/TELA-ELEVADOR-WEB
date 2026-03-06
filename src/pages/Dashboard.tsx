@@ -7,6 +7,7 @@ import { WeatherCard } from "@/components/WeatherCard";
 import { MessageBoard } from "@/components/MessageBoard";
 import { NewsCarousel } from "@/components/NewsCarousel";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useSignalR } from "@/hooks/useSignalR";
 import {
   fetchWeatherBySlug,
   getCachedWeather,
@@ -17,7 +18,7 @@ import { getMessages, Message } from "@/services/messageService";
 import { getPredio, OrientationMode, Predio } from "@/services/predioService";
 
 export function Dashboard() {
-  const { isOnline, isSyncing, lastSyncAt } = useOfflineSync();
+  const { isSyncing } = useOfflineSync();
   const { slug } = useParams();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +34,20 @@ export function Dashboard() {
     }
   }, [slug, navigate]);
 
+  // SignalR — avisos e orientação em tempo real (substitui polling)
+  const { isConnected: isSignalRConnected } = useSignalR({
+    slug: slug ?? "gramado",
+    onAvisosReceived: (msgs) => setMessages(msgs),
+    onOrientationReceived: (mode) => {
+      setOrientationMode((prev) => {
+        if (prev !== mode) {
+          console.log(`[Dashboard] Orientação alterada: ${prev} → ${mode}`);
+        }
+        return mode;
+      });
+    },
+  });
+
   useEffect(() => {
     const loadPredio = async () => {
       try {
@@ -45,29 +60,6 @@ export function Dashboard() {
       }
     };
     loadPredio();
-  }, [slug]);
-
-  // Atualiza orientação periodicamente (para pegar mudanças forçadas pelo admin/master)
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const predioData = await getPredio(slug ?? "gramado");
-        const novaOrientacao = predioData.orientationMode ?? "auto";
-        setOrientationMode((prev) => {
-          if (prev !== novaOrientacao) {
-            console.log(
-              `[Dashboard] Orientação alterada: ${prev} → ${novaOrientacao}`,
-            );
-          }
-          return novaOrientacao;
-        });
-        setPredio(predioData);
-      } catch (err) {
-        console.error("Erro no polling de orientação:", err);
-      }
-    }, 10000); // A cada 10 segundos
-
-    return () => clearInterval(interval);
   }, [slug]);
 
   useEffect(() => {
@@ -110,7 +102,7 @@ export function Dashboard() {
     return () => observer.disconnect();
   }, [messages]);
 
-  // Carrega mensagens iniciais
+  // Carrega mensagens iniciais (SignalR faz o push depois)
   useEffect(() => {
     const loadInitial = async () => {
       try {
@@ -123,23 +115,7 @@ export function Dashboard() {
       }
     };
     loadInitial();
-  }, []);
-
-  // Atualiza mensagens e fontes periodicamente (para pegar mudanças do admin)
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const msgs = await getMessages(slug ?? "gramado");
-        if (msgs !== null) {
-          setMessages(msgs);
-        }
-      } catch (err) {
-        console.error("Erro no polling de mensagens:", err);
-      }
-    }, 5000); // A cada 5 segundos
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [slug]);
 
   // Query de clima com fallback para cache
   const {
@@ -206,6 +182,7 @@ export function Dashboard() {
         throw err;
       }
     },
+    enabled: !!slug,
     staleTime: 1000 * 60 * 15, // 15 minutos
     refetchInterval: 1000 * 60 * 30, // 30 minutos
     retry: 3,
@@ -253,16 +230,15 @@ export function Dashboard() {
                 </div>
 
                 <ConnectionStatus
-                  isOnline={isOnline}
                   isSyncing={isSyncing}
-                  lastSyncAt={lastSyncAt}
+                  isSignalRConnected={isSignalRConnected}
                 />
               </div>
             </header>
 
             {/* Carrossel de noticias */}
             <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-xl dashboard-news">
-              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} />
+              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} error={newsError} />
             </div>
           </div>
 

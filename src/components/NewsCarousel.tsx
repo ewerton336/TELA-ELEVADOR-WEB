@@ -5,9 +5,10 @@ import { Newspaper } from "lucide-react";
 interface NewsCarouselProps {
   data: NewsData | null;
   isLoading?: boolean;
+  error?: Error | null;
 }
 
-export function NewsCarousel({ data, isLoading }: NewsCarouselProps) {
+export function NewsCarousel({ data, isLoading, error }: NewsCarouselProps) {
   const [current, setCurrent] = useState(0);
   const [progress, setProgress] = useState(0);
   const slideDurationMs = 10000;
@@ -57,8 +58,17 @@ export function NewsCarousel({ data, isLoading }: NewsCarouselProps) {
     return (
       <div className="h-full rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur flex flex-col items-center justify-center text-white/60">
         <Newspaper className="w-8 h-8 mb-2" />
-        <p className="text-sm">Carregando notícias...</p>
-        <p className="text-xs mt-1">Aguarde um momento</p>
+        {error ? (
+          <>
+            <p className="text-sm text-red-400">Erro ao carregar notícias</p>
+            <p className="text-xs mt-1 text-white/40">Tentando novamente...</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm">Carregando notícias...</p>
+            <p className="text-xs mt-1">Aguarde um momento</p>
+          </>
+        )}
       </div>
     );
   }

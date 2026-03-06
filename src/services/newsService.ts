@@ -1,4 +1,4 @@
-import { getCache, setCache } from "@/lib/cache";
+import { getCache, setCache, isCacheExpired } from "@/lib/cache";
 import { requestJson } from "@/services/apiClient";
 
 const CACHE_KEY = "news:v2";
@@ -20,6 +20,13 @@ export interface NewsData {
   items: NewsItem[];
   lastUpdated: string;
   enabledSourceIds?: string[];
+}
+
+function stripHtml(text: string): string {
+  return text
+    .replace(/<[^>]*>?/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function trimToNextPunctuation(text: string, minLength: number): string {
@@ -44,7 +51,7 @@ function normalizeNewsData(data: NewsData): NewsData {
     ...data,
     items: data.items.map((item) => ({
       ...item,
-      description: trimToNextPunctuation(item.description ?? "", 200),
+      description: stripHtml(trimToNextPunctuation(item.description ?? "", 200)),
     })),
   };
 }
@@ -53,23 +60,33 @@ function getCacheKey(slug: string): string {
   return `${CACHE_KEY}:${slug}`;
 }
 
-export async function fetchNews(slug: string, take = 6): Promise<NewsData> {
+export async function fetchNews(slug: string, take = 10): Promise<NewsData> {
   const cacheKey = getCacheKey(slug);
   const cached = getCache<NewsData>(cacheKey);
-  if (cached) {
+
+  // Só usar cache se não estiver expirado
+  if (cached && !isCacheExpired(cacheKey)) {
     return normalizeNewsData(cached);
   }
 
-  const data = await requestJson<NewsData>(
-    slug,
-    `/noticia?take=${encodeURIComponent(String(take))}`,
-    { method: "GET" },
-    "fetchNews",
-  );
+  try {
+    const data = await requestJson<NewsData>(
+      slug,
+      `/noticia?take=${encodeURIComponent(String(take))}`,
+      { method: "GET" },
+      "fetchNews",
+    );
 
-  const normalized = normalizeNewsData(data);
-  setCache(cacheKey, normalized, CACHE_TTL_MINUTES);
-  return normalized;
+    const normalized = normalizeNewsData(data);
+    setCache(cacheKey, normalized, CACHE_TTL_MINUTES);
+    return normalized;
+  } catch (error) {
+    // Se falhar a requisição e houver cache (mesmo expirado), usar como fallback
+    if (cached) {
+      return normalizeNewsData(cached);
+    }
+    throw error;
+  }
 }
 
 export function getCachedNews(slug: string): NewsData | null {
