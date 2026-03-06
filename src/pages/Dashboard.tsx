@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DigitalClock } from "@/components/DigitalClock";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { WeatherCard } from "@/components/WeatherCard";
@@ -16,11 +16,13 @@ import {
 import { fetchNews, getCachedNews, NewsData } from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
 import { getPredio, OrientationMode, Predio } from "@/services/predioService";
+import { getNoticiasInternas, NoticiaInterna } from "@/services/noticiaInternaService";
 
 export function Dashboard() {
   const { isSyncing } = useOfflineSync();
   const { slug } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
@@ -44,6 +46,7 @@ export function Dashboard() {
         return mode;
       });
     },
+    onNoticiasInternasReceived: (noticias) => queryClient.setQueryData(["noticiasInternas", slug], noticias),
   });
 
   useEffect(() => {
@@ -161,6 +164,14 @@ export function Dashboard() {
     retryDelay: 500,
   });
 
+  // Query de notícias internas
+  const { data: noticiasInternas = [] } = useQuery<NoticiaInterna[]>({
+    queryKey: ["noticiasInternas", slug],
+    queryFn: () => getNoticiasInternas(slug ?? "gramado"),
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
+
   // Log para debug de notícias
   useEffect(() => {
     if (newsError) {
@@ -174,13 +185,13 @@ export function Dashboard() {
   return (
     <div className="elevator-screen h-screen w-screen overflow-hidden">
       <div className="elevator-rotate">
-        <div className="relative w-full h-full overflow-hidden border border-white/10 shadow-2xl bg-slate-950/80 backdrop-blur-lg elevator-frame">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_35%),radial-gradient(circle_at_80%_0,rgba(255,115,29,0.08),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(88,28,135,0.12),transparent_35%)] dashboard-ambient" />
+        <div className="relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame">
+          <div className="absolute inset-0 bg-slate-950/60 dashboard-ambient" />
 
           <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4 dashboard-grid">
             {/* Coluna de avisos à esquerda */}
             <aside
-              className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos"
+              className="h-full rounded-2xl bg-[#261446] border border-white/10 overflow-hidden dashboard-avisos"
             >
               <div className="h-full px-4 py-3">
                 <MessageBoard messages={messages} />
@@ -208,8 +219,8 @@ export function Dashboard() {
             </header>
 
             {/* Carrossel de noticias */}
-            <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-xl dashboard-news">
-              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} error={newsError} />
+            <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 dashboard-news">
+              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} error={newsError} noticiasInternas={noticiasInternas} />
             </div>
           </div>
 

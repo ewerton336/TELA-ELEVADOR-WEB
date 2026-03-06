@@ -48,6 +48,9 @@ import {
   Newspaper,
   Rss,
   RefreshCw,
+  Image,
+  Video,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as predioAdminService from "@/services/predioAdminService";
@@ -57,6 +60,13 @@ import {
   getNewsStats,
   type NewsStatsResponse,
 } from "@/services/newsHealthCheckService";
+import {
+  type NoticiaInterna,
+  getNoticiasInternasAdmin,
+  createNoticiaInterna,
+  updateNoticiaInterna,
+  deleteNoticiaInterna,
+} from "@/services/noticiaInternaService";
 
 function getRoleFromToken(token: string | null): string | null {
   if (!token) return null;
@@ -110,6 +120,19 @@ export function Admin() {
     useState<OrientationMode>("auto");
   const [isDeveloper, setIsDeveloper] = useState(false);
 
+  // Internal news state
+  const [noticiasInternas, setNoticiasInternas] = useState<NoticiaInterna[]>([]);
+  const [niEditingId, setNiEditingId] = useState<number | null>(null);
+  const [niIsAdding, setNiIsAdding] = useState(false);
+  const [niTitulo, setNiTitulo] = useState("");
+  const [niSubtitulo, setNiSubtitulo] = useState("");
+  const [niArquivo, setNiArquivo] = useState<File | null>(null);
+  const [niPreviewUrl, setNiPreviewUrl] = useState<string | null>(null);
+  const [niInicioEm, setNiInicioEm] = useState("");
+  const [niFimEm, setNiFimEm] = useState("");
+  const [niAtivo, setNiAtivo] = useState(true);
+  const [niSaving, setNiSaving] = useState(false);
+
   // Rich text formatting
   const applyFormatting = (tag: string) => {
     const textarea = document.getElementById("content") as HTMLTextAreaElement;
@@ -140,6 +163,7 @@ export function Admin() {
       loadMessages();
       loadFontes();
       loadStats();
+      loadNoticiasInternas();
     }
   }, [isAuthenticated]);
 
@@ -209,7 +233,109 @@ export function Admin() {
       setNewsStats(stats);
     } catch (err) {
       console.error("Erro ao carregar stats de noticias:", err);
-      // Não mostrar toast aqui para não poluir a UI
+    }
+  };
+
+  const loadNoticiasInternas = async () => {
+    if (!token) return;
+    try {
+      const list = await getNoticiasInternasAdmin(slug ?? "gramado", token);
+      setNoticiasInternas(list);
+    } catch (err) {
+      console.error("Erro ao carregar noticias internas:", err);
+      toast.error("Erro ao carregar notícias do condomínio");
+    }
+  };
+
+  const niResetForm = () => {
+    setNiTitulo("");
+    setNiSubtitulo("");
+    setNiArquivo(null);
+    setNiPreviewUrl(null);
+    setNiInicioEm("");
+    setNiFimEm("");
+    setNiAtivo(true);
+    setNiEditingId(null);
+    setNiIsAdding(false);
+  };
+
+  const niHandleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setNiArquivo(file);
+    if (niPreviewUrl) URL.revokeObjectURL(niPreviewUrl);
+    setNiPreviewUrl(file ? URL.createObjectURL(file) : null);
+  };
+
+  const niHandleStartAdd = () => {
+    niResetForm();
+    setNiIsAdding(true);
+  };
+
+  const niHandleStartEdit = (ni: NoticiaInterna) => {
+    setNiTitulo(ni.titulo);
+    setNiSubtitulo(ni.subtitulo ?? "");
+    setNiArquivo(null);
+    if (niPreviewUrl) URL.revokeObjectURL(niPreviewUrl);
+    setNiPreviewUrl(null);
+    setNiInicioEm(ni.inicioEm ? ni.inicioEm.slice(0, 16) : "");
+    setNiFimEm(ni.fimEm ? ni.fimEm.slice(0, 16) : "");
+    setNiAtivo(ni.ativo);
+    setNiEditingId(ni.id);
+    setNiIsAdding(false);
+  };
+
+  const niHandleSave = async () => {
+    if (!niTitulo.trim()) {
+      toast.error("Preencha o título!");
+      return;
+    }
+    if (niIsAdding && !niArquivo) {
+      toast.error("Selecione um arquivo (imagem ou vídeo)!");
+      return;
+    }
+
+    setNiSaving(true);
+    try {
+      if (niIsAdding && niArquivo) {
+        await createNoticiaInterna(slug ?? "gramado", token, {
+          titulo: niTitulo.trim(),
+          subtitulo: niSubtitulo.trim() || undefined,
+          inicioEm: niInicioEm || undefined,
+          fimEm: niFimEm || undefined,
+          arquivo: niArquivo,
+        });
+        toast.success("Notícia do condomínio adicionada!");
+      } else if (niEditingId !== null) {
+        await updateNoticiaInterna(slug ?? "gramado", token, niEditingId, {
+          titulo: niTitulo.trim(),
+          subtitulo: niSubtitulo.trim() || undefined,
+          inicioEm: niInicioEm || undefined,
+          fimEm: niFimEm || undefined,
+          ativo: niAtivo,
+          arquivo: niArquivo ?? undefined,
+        });
+        toast.success("Notícia do condomínio atualizada!");
+      }
+      niResetForm();
+      await loadNoticiasInternas();
+    } catch (err) {
+      console.error("Erro ao salvar noticia interna:", err);
+      toast.error("Erro ao salvar notícia do condomínio");
+    } finally {
+      setNiSaving(false);
+    }
+  };
+
+  const niHandleDelete = async (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir esta notícia?")) return;
+    try {
+      await deleteNoticiaInterna(slug ?? "gramado", token, id);
+      toast.success("Notícia excluída!");
+      await loadNoticiasInternas();
+      if (niEditingId === id) niResetForm();
+    } catch (err) {
+      console.error("Erro ao excluir noticia interna:", err);
+      toast.error("Erro ao excluir notícia");
     }
   };
 
@@ -655,6 +781,249 @@ export function Admin() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Notícias do Condomínio */}
+      <Card className="glass-card border-white/10 mb-4">
+        <CardHeader className="flex-row items-center justify-between py-3 px-4">
+          <CardTitle className="text-white flex items-center gap-2 text-sm">
+            <Image className="w-4 h-4" />
+            Notícias do Condomínio ({noticiasInternas.length})
+          </CardTitle>
+          <Button onClick={niHandleStartAdd} size="sm" className="h-7 text-xs">
+            <Plus className="w-3 h-3 mr-1" />
+            Nova
+          </Button>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <p className="text-white/50 text-xs mb-3">
+            Cadastre notícias com imagem ou vídeo que serão intercaladas com as notícias externas no carrossel.
+          </p>
+
+          {/* Form to add/edit internal news */}
+          {(niIsAdding || niEditingId !== null) && (
+            <div className="border border-white/20 rounded-lg p-4 mb-4 bg-white/5">
+              <h3 className="text-white text-sm font-semibold mb-3">
+                {niIsAdding ? "Nova Notícia" : "Editar Notícia"}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="ni-titulo" className="text-white text-xs">Título *</Label>
+                    <Input
+                      id="ni-titulo"
+                      value={niTitulo}
+                      onChange={(e) => setNiTitulo(e.target.value)}
+                      placeholder="Título da notícia"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ni-subtitulo" className="text-white text-xs">Subtítulo</Label>
+                    <Input
+                      id="ni-subtitulo"
+                      value={niSubtitulo}
+                      onChange={(e) => setNiSubtitulo(e.target.value)}
+                      placeholder="Subtítulo (opcional)"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ni-arquivo" className="text-white text-xs">
+                      {niIsAdding ? "Arquivo (imagem ou vídeo) *" : "Substituir arquivo (opcional)"}
+                    </Label>
+                    <Input
+                      id="ni-arquivo"
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+                      onChange={niHandleFileChange}
+                      className="bg-white/10 border-white/20 text-white h-8 text-sm file:bg-white/10 file:text-white file:border-0 file:mr-2 file:px-2 file:rounded"
+                    />
+                    <p className="text-white/30 text-[10px]">Máx 25 MB. Formatos: JPEG, PNG, GIF, WebP, MP4, WebM</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="ni-inicio" className="text-white text-xs">Início em</Label>
+                      <Input
+                        id="ni-inicio"
+                        type="datetime-local"
+                        value={niInicioEm}
+                        onChange={(e) => setNiInicioEm(e.target.value)}
+                        className="bg-white/10 border-white/20 text-white h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ni-fim" className="text-white text-xs">Fim em</Label>
+                      <Input
+                        id="ni-fim"
+                        type="datetime-local"
+                        value={niFimEm}
+                        onChange={(e) => setNiFimEm(e.target.value)}
+                        className="bg-white/10 border-white/20 text-white h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                  {niEditingId !== null && (
+                    <div className="flex items-center gap-2">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={niAtivo}
+                          onChange={(e) => setNiAtivo(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                      </label>
+                      <Label className="text-white flex items-center gap-1 text-xs">
+                        {niAtivo ? (
+                          <><Eye className="w-3 h-3 text-green-400" /> Ativo</>
+                        ) : (
+                          <><EyeOff className="w-3 h-3 text-white/50" /> Inativo</>
+                        )}
+                      </Label>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <Button onClick={niHandleSave} disabled={niSaving} className="flex-1 h-8 text-sm">
+                      <Save className="w-3 h-3 mr-1" />
+                      {niSaving ? "Salvando..." : "Salvar"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={niResetForm}
+                      className="bg-transparent border-white/20 text-white hover:bg-white/10 h-8 text-sm"
+                    >
+                      <X className="w-3 h-3 mr-1" /> Cancelar
+                    </Button>
+                  </div>
+                </div>
+                {/* Preview */}
+                <div className="flex items-center justify-center">
+                  {niPreviewUrl ? (
+                    niArquivo?.type.startsWith("video/") ? (
+                      <video
+                        src={niPreviewUrl}
+                        controls
+                        className="max-h-[240px] rounded-lg w-full object-contain bg-black"
+                      />
+                    ) : (
+                      <img
+                        src={niPreviewUrl}
+                        alt="Preview"
+                        className="max-h-[240px] rounded-lg object-contain"
+                      />
+                    )
+                  ) : niEditingId !== null ? (
+                    (() => {
+                      const editing = noticiasInternas.find(n => n.id === niEditingId);
+                      if (!editing) return null;
+                      return editing.tipoMidia === "video" ? (
+                        <video
+                          src={editing.mediaUrl}
+                          controls
+                          className="max-h-[240px] rounded-lg w-full object-contain bg-black"
+                        />
+                      ) : (
+                        <img
+                          src={editing.mediaUrl}
+                          alt="Atual"
+                          className="max-h-[240px] rounded-lg object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      );
+                    })()
+                  ) : (
+                    <div className="text-white/30 text-center p-8">
+                      <Upload className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-xs">Selecione um arquivo para preview</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* List of internal news */}
+          {noticiasInternas.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {noticiasInternas.map((ni) => (
+                <div
+                  key={ni.id}
+                  className={`rounded-lg border overflow-hidden transition-all ${
+                    niEditingId === ni.id
+                      ? "border-blue-500 bg-blue-500/10"
+                      : !ni.ativo
+                        ? "border-white/5 bg-white/5 opacity-50"
+                        : "border-white/10 bg-white/5 hover:border-white/20"
+                  }`}
+                >
+                  {/* Thumbnail */}
+                  <div className="h-32 bg-black/30 relative">
+                    {ni.tipoMidia === "video" ? (
+                      <div className="w-full h-full flex items-center justify-center bg-black/50">
+                        <Video className="w-8 h-8 text-white/50" />
+                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                          Vídeo
+                        </span>
+                      </div>
+                    ) : (
+                      <img
+                        src={ni.mediaUrl}
+                        alt={ni.titulo}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                    {!ni.ativo && (
+                      <span className="absolute top-1 left-1 bg-white/20 text-white/60 text-[10px] px-1.5 py-0.5 rounded">
+                        Inativo
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="text-white text-sm font-medium truncate">{ni.titulo}</p>
+                    {ni.subtitulo && (
+                      <p className="text-white/50 text-xs truncate">{ni.subtitulo}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-white/30 text-[10px]">
+                        {new Date(ni.criadoEm).toLocaleDateString("pt-BR")}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-white/50 hover:text-white"
+                          onClick={() => niHandleStartEdit(ni)}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-red-400 hover:text-red-300"
+                          onClick={() => niHandleDelete(ni.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            !niIsAdding && (
+              <div className="text-center py-8 text-white/40">
+                <Newspaper className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhuma notícia do condomínio</p>
+                <p className="text-xs">Clique em "Nova" para adicionar</p>
+              </div>
+            )
+          )}
         </CardContent>
       </Card>
 

@@ -196,11 +196,11 @@
 }
 
 .glass-card {
-  @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-xl;
+  @apply bg-slate-900/80 border border-white/20 rounded-xl;
 }
 
 .weather-icon {
-  @apply drop-shadow-lg;
+  @apply drop-shadow;
 }
 
 /* Animação para notícias */
@@ -258,69 +258,6 @@
   transform-origin: left center;
   animation: message-progress var(--message-progress-duration, 15000ms) linear
     forwards;
-}
-
-/* Modo desempenho para kiosks */
-.perf-mode .elevator-screen {
-  background: #0b0f1a;
-}
-
-.perf-mode .glass-card {
-  background-color: rgba(15, 23, 42, 0.8);
-  backdrop-filter: none;
-}
-
-.perf-mode .backdrop-blur,
-.perf-mode .backdrop-blur-md,
-.perf-mode .backdrop-blur-lg,
-.perf-mode .backdrop-blur-xl {
-  backdrop-filter: none !important;
-}
-
-.perf-mode .shadow-lg,
-.perf-mode .shadow-xl,
-.perf-mode .shadow-2xl,
-.perf-mode .shadow,
-.perf-mode .drop-shadow,
-.perf-mode .drop-shadow-lg {
-  box-shadow: none !important;
-  filter: none !important;
-}
-
-.perf-mode .bg-gradient-to-br,
-.perf-mode .bg-gradient-to-t,
-.perf-mode .bg-gradient-to-r,
-.perf-mode .bg-gradient-to-b,
-.perf-mode .bg-gradient-to-l {
-  background-image: none !important;
-  background-color: rgba(15, 23, 42, 0.9) !important;
-}
-
-.perf-mode .animate-pulse {
-  animation: none !important;
-}
-
-.perf-mode .fade-slide {
-  transition: none !important;
-}
-
-.perf-mode .dashboard-ambient {
-  display: none !important;
-}
-
-.perf-mode .elevator-frame {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.perf-mode img {
-  image-rendering: optimizeSpeed;
-}
-
-.perf-mode .border,
-.perf-mode .border-white\/10,
-.perf-mode .border-white\/20 {
-  border-color: transparent !important;
 }
 
 /* Scrollbar customizada */

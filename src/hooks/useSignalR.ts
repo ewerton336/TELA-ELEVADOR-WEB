@@ -7,17 +7,20 @@ import {
 } from "@microsoft/signalr";
 import { getMessages, Message } from "@/services/messageService";
 import { getPredio, OrientationMode } from "@/services/predioService";
+import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaService";
 
 interface UseSignalROptions {
   slug: string;
   onAvisosReceived: (messages: Message[]) => void;
   onOrientationReceived: (mode: OrientationMode) => void;
+  onNoticiasInternasReceived?: (noticias: NoticiaInterna[]) => void;
 }
 
 export function useSignalR({
   slug,
   onAvisosReceived,
   onOrientationReceived,
+  onNoticiasInternasReceived,
 }: UseSignalROptions) {
   const connectionRef = useRef<HubConnection | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -30,6 +33,8 @@ export function useSignalR({
   onAvisosRef.current = onAvisosReceived;
   const onOrientationRef = useRef(onOrientationReceived);
   onOrientationRef.current = onOrientationReceived;
+  const onNoticiasInternasRef = useRef(onNoticiasInternasReceived);
+  onNoticiasInternasRef.current = onNoticiasInternasReceived;
 
   // Mapeia avisos do formato da API para Message[]
   const mapAvisosToMessages = useCallback(
@@ -100,6 +105,12 @@ export function useSignalR({
     } catch {
       // silencioso
     }
+    try {
+      const ni = await getNoticiasInternas(slug);
+      onNoticiasInternasRef.current?.(ni);
+    } catch {
+      // silencioso
+    }
   }, [slug]);
 
   // Tentativa manual infinita de reconexão (para WiFi intermitente do elevador)
@@ -151,6 +162,13 @@ export function useSignalR({
     connection.on("ReceiveOrientation", (mode: string) => {
       console.log("[SignalR] Orientação recebida:", mode);
       onOrientationRef.current(mode as OrientationMode);
+    });
+
+    connection.on("NoticiasInternasChanged", (noticias: unknown) => {
+      if (Array.isArray(noticias)) {
+        console.log("[SignalR] Notícias internas recebidas:", noticias.length);
+        onNoticiasInternasRef.current?.(noticias as NoticiaInterna[]);
+      }
     });
 
     // --- Handlers de conexão ---
