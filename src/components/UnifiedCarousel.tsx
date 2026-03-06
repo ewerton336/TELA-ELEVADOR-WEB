@@ -92,6 +92,13 @@ export function UnifiedCarousel({
     return () => clearInterval(timer);
   }, [slides.length, slideDurationMs]);
 
+  // Renderiza apenas slide atual e próximo (reduz DOM)
+  const visibleIndices = useMemo(() => {
+    if (slides.length === 0) return [];
+    const next = (current + 1) % slides.length;
+    return current === next ? [current] : [current, next];
+  }, [current, slides.length]);
+
   // Estado de loading
   if (isLoading && slides.length === 0) {
     return (
@@ -123,7 +130,9 @@ export function UnifiedCarousel({
   return (
     <div className="h-full">
       <div className="fade-stack h-full">
-        {slides.map((slide, index) => (
+        {visibleIndices.map((index) => {
+          const slide = slides[index];
+          return (
           <div
             key={`${slide.type}-${index}`}
             className={`fade-slide ${index === current ? "is-active" : ""}`}
@@ -139,7 +148,8 @@ export function UnifiedCarousel({
               <UrgentSlide message={slide.data as Message} />
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -155,6 +165,8 @@ function NewsSlide({ item }: { item: NewsItem }) {
           src={item.thumbnail}
           alt={item.title}
           className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             (e.target as HTMLImageElement).src =
               "https://placehold.co/800x450/c4170c/ffffff?text=G1+Santos";

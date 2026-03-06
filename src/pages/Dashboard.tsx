@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { DigitalClock } from "@/components/DigitalClock";
@@ -25,8 +25,6 @@ export function Dashboard() {
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
   const [predio, setPredio] = useState<Predio | null>(null);
-  const messageBoardRef = useRef<HTMLDivElement>(null);
-  const [messageBoardHeight, setMessageBoardHeight] = useState(0);
 
   useEffect(() => {
     if (!slug) {
@@ -75,32 +73,6 @@ export function Dashboard() {
       root.classList.remove("force-portrait", "force-landscape");
     };
   }, [orientationMode]);
-
-  // Mede a altura do MessageBoard e atualiza o CSS dinamicamente
-  useEffect(() => {
-    const measureMessageBoard = () => {
-      if (messageBoardRef.current) {
-        const height = messageBoardRef.current.scrollHeight;
-        setMessageBoardHeight(height);
-        // Define variável CSS customizada para uso no layout dinâmico
-        document.documentElement.style.setProperty(
-          "--message-board-height",
-          `${height}px`,
-        );
-      }
-    };
-
-    // Mede inicialmente
-    measureMessageBoard();
-
-    // Remede quando houver mudanças nas mensagens
-    const observer = new ResizeObserver(measureMessageBoard);
-    if (messageBoardRef.current) {
-      observer.observe(messageBoardRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [messages]);
 
   // Carrega mensagens iniciais (SignalR faz o push depois)
   useEffect(() => {
@@ -203,13 +175,12 @@ export function Dashboard() {
     <div className="elevator-screen h-screen w-screen overflow-hidden">
       <div className="elevator-rotate">
         <div className="relative w-full h-full overflow-hidden border border-white/10 shadow-2xl bg-slate-950/80 backdrop-blur-lg elevator-frame">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_35%),radial-gradient(circle_at_80%_0,rgba(255,115,29,0.08),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(88,28,135,0.12),transparent_35%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_35%),radial-gradient(circle_at_80%_0,rgba(255,115,29,0.08),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(88,28,135,0.12),transparent_35%)] dashboard-ambient" />
 
           <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4 dashboard-grid">
             {/* Coluna de avisos à esquerda */}
             <aside
               className="h-full rounded-2xl bg-[#261446] border border-white/10 shadow-xl overflow-hidden dashboard-avisos"
-              ref={messageBoardRef}
             >
               <div className="h-full px-4 py-3">
                 <MessageBoard messages={messages} />

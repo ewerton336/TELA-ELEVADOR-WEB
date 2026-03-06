@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { NewsData, NewsItem } from "@/services/newsService";
+import { useEffect, useState, useMemo } from "react";
+import { NewsData } from "@/services/newsService";
 import { Newspaper } from "lucide-react";
 
 interface NewsCarouselProps {
@@ -10,24 +10,7 @@ interface NewsCarouselProps {
 
 export function NewsCarousel({ data, isLoading, error }: NewsCarouselProps) {
   const [current, setCurrent] = useState(0);
-  const [progress, setProgress] = useState(0);
   const slideDurationMs = 10000;
-
-  // Progress bar animation
-  useEffect(() => {
-    setProgress(0);
-    const interval = 50; // Atualiza a cada 50ms
-    const increment = (interval / slideDurationMs) * 100;
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) return 100;
-        return prev + increment;
-      });
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, [current, slideDurationMs]);
 
   useEffect(() => {
     if (!data?.items?.length) {
@@ -41,6 +24,13 @@ export function NewsCarousel({ data, isLoading, error }: NewsCarouselProps) {
 
     return () => clearInterval(timer);
   }, [data?.items?.length, slideDurationMs]);
+
+  // Renderiza apenas slide atual e próximo (reduz DOM)
+  const visibleIndices = useMemo(() => {
+    if (!data?.items?.length) return [];
+    const next = (current + 1) % data.items.length;
+    return current === next ? [current] : [current, next];
+  }, [current, data?.items?.length]);
 
   if (isLoading) {
     return (
@@ -76,18 +66,22 @@ export function NewsCarousel({ data, isLoading, error }: NewsCarouselProps) {
   return (
     <div className="relative h-full rounded-2xl overflow-hidden">
       <div className="fade-stack h-full">
-        {data.items.map((item: NewsItem, index: number) => (
+        {visibleIndices.map((index) => {
+          const item = data.items[index];
+          return (
           <div
             key={item.id}
             className={`fade-slide ${index === current ? "is-active" : ""}`}
             aria-hidden={index !== current}
           >
             <div className="relative h-full">
-              {/* Imagem de fundo */}
+              {/* Imagem de fundo — só carrega slides visíveis */}
               <img
                 src={item.thumbnail}
                 alt={item.title}
                 className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
                     "https://placehold.co/1200x800/1e293b/94a3b8?text=G1";
@@ -126,14 +120,16 @@ export function NewsCarousel({ data, isLoading, error }: NewsCarouselProps) {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar — CSS animation pura, zero re-renders */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
         <div
-          className="h-full bg-orange-500 transition-all duration-100 ease-linear"
-          style={{ width: `${progress}%` }}
+          key={current}
+          className="carousel-progress-bar h-full bg-orange-500"
+          style={{ "--carousel-progress-duration": `${slideDurationMs}ms` } as React.CSSProperties}
         />
       </div>
     </div>

@@ -206,7 +206,7 @@ export function useSignalR({
           })
           .catch(() => {});
       }
-    }, 30_000);
+    }, 60_000);
 
     return () => {
       clearInterval(heartbeatInterval);

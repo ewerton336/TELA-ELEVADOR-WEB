@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useClock } from "@/hooks/useClock";
 import { Building2 } from "lucide-react";
 import { Predio } from "@/services/predioService";
@@ -6,7 +7,7 @@ interface DigitalClockProps {
   predio: Predio | null;
 }
 
-export function DigitalClock({ predio }: DigitalClockProps) {
+export const DigitalClock = memo(function DigitalClock({ predio }: DigitalClockProps) {
   const { timeFormatted, seconds, dateFormatted } = useClock();
 
   return (
@@ -39,4 +40,4 @@ export function DigitalClock({ predio }: DigitalClockProps) {
       </div>
     </div>
   );
-}
+});
