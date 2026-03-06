@@ -257,7 +257,7 @@ function InternalNewsSlide({
       ) : (
         <img
           src={item.mediaUrl}
-          alt={item.titulo}
+          alt={item.titulo || "Notícia do condomínio"}
           className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
           decoding="async"
@@ -270,17 +270,19 @@ function InternalNewsSlide({
       {/* Conteúdo */}
       <div className="relative h-full px-6 sm:px-8 py-6 flex flex-col justify-between text-white">
         <div className="flex items-center gap-2 text-sm text-white/80">
-          <div className="bg-blue-600/80 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
+          <div className="bg-orange-500/75 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
             📢 Condomínio
           </div>
         </div>
 
         <div className="flex-1 flex flex-col justify-end gap-3 max-w-[80%] pb-2">
-          <h3 className="bg-blue-600/90 text-white font-black text-2xl sm:text-3xl md:text-4xl leading-tight px-3 py-2 rounded shadow-lg drop-shadow">
-            {item.titulo}
-          </h3>
+          {item.titulo && (
+            <h3 className="bg-orange-500/90 text-slate-900 font-black text-2xl sm:text-3xl md:text-4xl leading-tight px-3 py-2 rounded shadow-lg drop-shadow">
+              {item.titulo}
+            </h3>
+          )}
           {item.subtitulo && (
-            <p className="bg-[#231344]/90 text-blue-100 text-base sm:text-lg leading-relaxed px-3 py-3 rounded-lg shadow max-w-2xl">
+            <p className="bg-[#231344]/90 text-orange-100 text-base sm:text-lg leading-relaxed px-3 py-5 rounded-lg shadow max-w-2xl">
               {item.subtitulo}
             </p>
           )}

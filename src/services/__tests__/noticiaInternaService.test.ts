@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 interface NoticiaInterna {
   id: number;
-  titulo: string;
+  titulo?: string | null;
   subtitulo?: string | null;
   tipoMidia: "imagem" | "video";
   mediaUrl: string;
@@ -18,14 +18,14 @@ interface NoticiaInterna {
 // ── Reprodução da lógica de createNoticiaInterna (FormData building) ──
 
 function buildFormData(data: {
-  titulo: string;
+  titulo?: string;
   subtitulo?: string;
   inicioEm?: string;
   fimEm?: string;
   arquivo: File;
 }): FormData {
   const formData = new FormData();
-  formData.append("titulo", data.titulo);
+  if (data.titulo) formData.append("titulo", data.titulo);
   if (data.subtitulo) formData.append("subtitulo", data.subtitulo);
   if (data.inicioEm) formData.append("inicioEm", data.inicioEm);
   if (data.fimEm) formData.append("fimEm", data.fimEm);
@@ -34,7 +34,7 @@ function buildFormData(data: {
 }
 
 function buildUpdateFormData(data: {
-  titulo: string;
+  titulo?: string;
   subtitulo?: string;
   inicioEm?: string;
   fimEm?: string;
@@ -42,7 +42,7 @@ function buildUpdateFormData(data: {
   arquivo?: File;
 }): FormData {
   const formData = new FormData();
-  formData.append("titulo", data.titulo);
+  if (data.titulo) formData.append("titulo", data.titulo);
   if (data.subtitulo) formData.append("subtitulo", data.subtitulo);
   if (data.inicioEm) formData.append("inicioEm", data.inicioEm);
   if (data.fimEm) formData.append("fimEm", data.fimEm);
@@ -79,6 +79,29 @@ describe("noticiaInternaService - FormData building", () => {
     expect(fd.get("titulo")).toBe("Festa");
     expect(fd.get("arquivo")).toBeInstanceOf(File);
     expect((fd.get("arquivo") as File).name).toBe("photo.jpg");
+  });
+
+  it("não deve incluir titulo quando não informado", () => {
+    const file = new File(["c"], "img.png", { type: "image/png" });
+    const fd = buildFormData({ arquivo: file });
+
+    expect(fd.get("titulo")).toBeNull();
+  });
+
+  it("não deve incluir titulo quando string vazia", () => {
+    const file = new File(["c"], "img.png", { type: "image/png" });
+    const fd = buildFormData({ titulo: "", arquivo: file });
+
+    expect(fd.get("titulo")).toBeNull();
+  });
+
+  it("deve criar FormData apenas com arquivo quando titulo e subtitulo são omitidos", () => {
+    const file = new File(["c"], "img.png", { type: "image/png" });
+    const fd = buildFormData({ arquivo: file });
+
+    expect(fd.get("titulo")).toBeNull();
+    expect(fd.get("subtitulo")).toBeNull();
+    expect(fd.get("arquivo")).toBeInstanceOf(File);
   });
 
   it("deve incluir subtitulo quando informado", () => {
@@ -125,6 +148,23 @@ describe("noticiaInternaService - Update FormData", () => {
 
   it("deve incluir ativo false como string", () => {
     const fd = buildUpdateFormData({ titulo: "T", ativo: false });
+    expect(fd.get("ativo")).toBe("false");
+  });
+
+  it("não deve incluir titulo no update quando não informado", () => {
+    const fd = buildUpdateFormData({ ativo: true });
+    expect(fd.get("titulo")).toBeNull();
+  });
+
+  it("não deve incluir titulo no update quando string vazia", () => {
+    const fd = buildUpdateFormData({ titulo: "", ativo: true });
+    expect(fd.get("titulo")).toBeNull();
+  });
+
+  it("deve criar update FormData apenas com ativo quando titulo e subtitulo omitidos", () => {
+    const fd = buildUpdateFormData({ ativo: false });
+    expect(fd.get("titulo")).toBeNull();
+    expect(fd.get("subtitulo")).toBeNull();
     expect(fd.get("ativo")).toBe("false");
   });
 

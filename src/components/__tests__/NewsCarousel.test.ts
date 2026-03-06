@@ -16,7 +16,7 @@ interface NewsItem {
 
 interface NoticiaInterna {
   id: number;
-  titulo: string;
+  titulo?: string | null;
   subtitulo?: string | null;
   tipoMidia: "imagem" | "video";
   mediaUrl: string;
@@ -202,5 +202,59 @@ describe("interleaveWithInternal", () => {
     expect(result).toHaveLength(2);
     expect(result[0].type).toBe("external");
     expect(result[1].type).toBe("internal");
+  });
+
+  it("deve funcionar com notícia interna sem título", () => {
+    const ext = [makeExternal("1", "E1")];
+    const int: NoticiaInterna[] = [{
+      id: 1,
+      tipoMidia: "imagem",
+      mediaUrl: "/api/media/1.jpg",
+      ativo: true,
+      criadoEm: new Date().toISOString(),
+    }];
+
+    const result = interleaveWithInternal(ext, int);
+
+    expect(result).toHaveLength(2);
+    expect(result[1].type).toBe("internal");
+    expect((result[1].data as NoticiaInterna).titulo).toBeUndefined();
+  });
+
+  it("deve funcionar com notícia interna sem título e sem subtítulo", () => {
+    const int: NoticiaInterna[] = [{
+      id: 1,
+      tipoMidia: "video",
+      mediaUrl: "/api/media/1.mp4",
+      ativo: true,
+      criadoEm: new Date().toISOString(),
+    }];
+
+    const result = interleaveWithInternal([], int);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe("internal");
+    const data = result[0].data as NoticiaInterna;
+    expect(data.titulo).toBeUndefined();
+    expect(data.subtitulo).toBeUndefined();
+  });
+
+  it("deve preservar titulo null como null", () => {
+    const int: NoticiaInterna[] = [{
+      id: 1,
+      titulo: null,
+      subtitulo: null,
+      tipoMidia: "imagem",
+      mediaUrl: "/api/media/1.jpg",
+      ativo: true,
+      criadoEm: new Date().toISOString(),
+    }];
+
+    const result = interleaveWithInternal([], int);
+
+    expect(result).toHaveLength(1);
+    const data = result[0].data as NoticiaInterna;
+    expect(data.titulo).toBeNull();
+    expect(data.subtitulo).toBeNull();
   });
 });

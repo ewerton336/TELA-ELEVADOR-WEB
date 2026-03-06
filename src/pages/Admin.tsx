@@ -272,7 +272,7 @@ export function Admin() {
   };
 
   const niHandleStartEdit = (ni: NoticiaInterna) => {
-    setNiTitulo(ni.titulo);
+    setNiTitulo(ni.titulo ?? "");
     setNiSubtitulo(ni.subtitulo ?? "");
     setNiArquivo(null);
     if (niPreviewUrl) URL.revokeObjectURL(niPreviewUrl);
@@ -285,10 +285,6 @@ export function Admin() {
   };
 
   const niHandleSave = async () => {
-    if (!niTitulo.trim()) {
-      toast.error("Preencha o título!");
-      return;
-    }
     if (niIsAdding && !niArquivo) {
       toast.error("Selecione um arquivo (imagem ou vídeo)!");
       return;
@@ -298,7 +294,7 @@ export function Admin() {
     try {
       if (niIsAdding && niArquivo) {
         await createNoticiaInterna(slug ?? "gramado", token, {
-          titulo: niTitulo.trim(),
+          titulo: niTitulo.trim() || undefined,
           subtitulo: niSubtitulo.trim() || undefined,
           inicioEm: niInicioEm || undefined,
           fimEm: niFimEm || undefined,
@@ -307,7 +303,7 @@ export function Admin() {
         toast.success("Notícia do condomínio adicionada!");
       } else if (niEditingId !== null) {
         await updateNoticiaInterna(slug ?? "gramado", token, niEditingId, {
-          titulo: niTitulo.trim(),
+          titulo: niTitulo.trim() || undefined,
           subtitulo: niSubtitulo.trim() || undefined,
           inicioEm: niInicioEm || undefined,
           fimEm: niFimEm || undefined,
@@ -810,7 +806,7 @@ export function Admin() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <Label htmlFor="ni-titulo" className="text-white text-xs">Título *</Label>
+                    <Label htmlFor="ni-titulo" className="text-white text-xs">Título</Label>
                     <Input
                       id="ni-titulo"
                       value={niTitulo}
@@ -971,7 +967,7 @@ export function Admin() {
                     ) : (
                       <img
                         src={ni.mediaUrl}
-                        alt={ni.titulo}
+                        alt={ni.titulo ?? "Notícia do condomínio"}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         decoding="async"

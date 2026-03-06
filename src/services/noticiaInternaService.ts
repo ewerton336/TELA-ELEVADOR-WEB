@@ -2,7 +2,7 @@ import { requestJson } from "@/services/apiClient";
 
 export interface NoticiaInterna {
   id: number;
-  titulo: string;
+  titulo?: string | null;
   subtitulo?: string | null;
   tipoMidia: "imagem" | "video";
   mediaUrl: string;
@@ -43,7 +43,7 @@ export async function createNoticiaInterna(
   slug: string,
   token: string | null,
   data: {
-    titulo: string;
+    titulo?: string;
     subtitulo?: string;
     inicioEm?: string;
     fimEm?: string;
@@ -51,7 +51,7 @@ export async function createNoticiaInterna(
   },
 ): Promise<NoticiaInterna> {
   const formData = new FormData();
-  formData.append("titulo", data.titulo);
+  if (data.titulo) formData.append("titulo", data.titulo);
   if (data.subtitulo) formData.append("subtitulo", data.subtitulo);
   if (data.inicioEm) formData.append("inicioEm", data.inicioEm);
   if (data.fimEm) formData.append("fimEm", data.fimEm);
@@ -81,7 +81,7 @@ export async function updateNoticiaInterna(
   token: string | null,
   id: number,
   data: {
-    titulo: string;
+    titulo?: string;
     subtitulo?: string;
     inicioEm?: string;
     fimEm?: string;
@@ -90,7 +90,7 @@ export async function updateNoticiaInterna(
   },
 ): Promise<NoticiaInterna> {
   const formData = new FormData();
-  formData.append("titulo", data.titulo);
+  if (data.titulo) formData.append("titulo", data.titulo);
   if (data.subtitulo) formData.append("subtitulo", data.subtitulo);
   if (data.inicioEm) formData.append("inicioEm", data.inicioEm);
   if (data.fimEm) formData.append("fimEm", data.fimEm);
