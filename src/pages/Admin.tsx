@@ -546,7 +546,7 @@ export function Admin() {
   // Tela de login
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 sm:p-6">
         <Card className="w-full max-w-md glass-card border-white/10">
           <CardHeader className="text-center">
             <div className="mx-auto p-4 rounded-full bg-blue-500/20 w-fit mb-4">
@@ -605,23 +605,23 @@ export function Admin() {
 
   // Painel admin
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+    <div className="min-h-screen max-h-screen overflow-y-auto bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 sm:p-4">
       {/* Header */}
-      <header className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(`/${slug ?? "gramado"}`)}
-            className="text-white/60 hover:text-white h-8 w-8"
+            className="text-white/60 hover:text-white h-8 w-8 flex-shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
-            <h1 className="text-xl font-display font-bold text-white">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-display font-bold text-white truncate">
               Painel do Síndico
             </h1>
-            <p className="text-white/50 text-xs">
+            <p className="text-white/50 text-xs hidden sm:block">
               Gerencie os recados do elevador
             </p>
           </div>
@@ -630,19 +630,19 @@ export function Admin() {
           variant="outline"
           size="sm"
           onClick={handleLogout}
-          className="bg-transparent border-white/20 text-white hover:bg-white/10"
+          className="bg-transparent border-white/20 text-white hover:bg-white/10 flex-shrink-0"
         >
           <LogOut className="w-3 h-3 mr-1" />
           Sair
         </Button>
       </header>
 
-      <Card className="glass-card border-white/10 mb-4">
-          <CardHeader className="flex-row items-center justify-between py-3 px-4">
+      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+          <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               Modo de exibicao da tela
             </CardTitle>
-            <span className="text-white/40 text-xs">
+            <span className="text-white/40 text-xs flex-shrink-0">
               {orientationMode === "auto"
                 ? "Automatico"
                 : orientationMode === "portrait"
@@ -650,7 +650,7 @@ export function Admin() {
                   : "Paisagem"}
             </span>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
             <p className="text-white/50 text-xs mb-3">
               Forca o modo retrato ou paisagem, mesmo se a tela estiver em outra
               orientacao.
@@ -676,16 +676,15 @@ export function Admin() {
         </Card>
 
       {/* Fontes de Notícias */}
-      <Card className="glass-card border-white/10 mb-4">
-        <CardHeader className="flex-row items-center justify-between py-3 px-4">
-          <div className="flex items-center gap-3">
+      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+        <CardHeader className="flex-row flex-wrap items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
-              <Newspaper className="w-4 h-4" />
-              Fontes de Notícias
+              <Newspaper className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Fontes de Notícias</span>
             </CardTitle>
-            <span className="text-white/40 text-xs">
-              {newsSources.filter((s) => s.habilitado).length} de{" "}
-              {newsSources.length} ativas
+            <span className="text-white/40 text-xs flex-shrink-0">
+              {newsSources.filter((s) => s.habilitado).length}/{newsSources.length}
             </span>
           </div>
           {isDeveloper && (
@@ -703,12 +702,12 @@ export function Admin() {
             </Button>
           )}
         </CardHeader>
-        <CardContent className="px-4 pb-4">
-          <p className="text-white/50 text-xs mb-3">
+        <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+          <p className="text-white/50 text-xs mb-3 hidden sm:block">
             Selecione as fontes de notícias que serão exibidas no elevador. As
             notícias alternarão entre as fontes ativas.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
             {newsSources.map((source) => (
               <div
                 key={source.id}
@@ -781,25 +780,25 @@ export function Admin() {
       </Card>
 
       {/* Notícias do Condomínio */}
-      <Card className="glass-card border-white/10 mb-4">
-        <CardHeader className="flex-row items-center justify-between py-3 px-4">
+      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+        <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
           <CardTitle className="text-white flex items-center gap-2 text-sm">
-            <Image className="w-4 h-4" />
-            Notícias do Condomínio ({noticiasInternas.length})
+            <Image className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Notícias do Condomínio ({noticiasInternas.length})</span>
           </CardTitle>
-          <Button onClick={niHandleStartAdd} size="sm" className="h-7 text-xs">
+          <Button onClick={niHandleStartAdd} size="sm" className="h-7 text-xs flex-shrink-0">
             <Plus className="w-3 h-3 mr-1" />
             Nova
           </Button>
         </CardHeader>
-        <CardContent className="px-4 pb-4">
-          <p className="text-white/50 text-xs mb-3">
+        <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+          <p className="text-white/50 text-xs mb-3 hidden sm:block">
             Cadastre notícias com imagem ou vídeo que serão intercaladas com as notícias externas no carrossel.
           </p>
 
           {/* Form to add/edit internal news */}
           {(niIsAdding || niEditingId !== null) && (
-            <div className="border border-white/20 rounded-lg p-4 mb-4 bg-white/5">
+            <div className="border border-white/20 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 bg-white/5">
               <h3 className="text-white text-sm font-semibold mb-3">
                 {niIsAdding ? "Nova Notícia" : "Editar Notícia"}
               </h3>
@@ -943,7 +942,7 @@ export function Admin() {
 
           {/* List of internal news */}
           {noticiasInternas.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {noticiasInternas.map((ni) => (
                 <div
                   key={ni.id}
@@ -1023,21 +1022,21 @@ export function Admin() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Lista de mensagens */}
         <Card className="glass-card border-white/10">
-          <CardHeader className="flex-row items-center justify-between py-3 px-4">
+          <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               <MessageSquare className="w-4 h-4" />
               Recados ({messages.length})
             </CardTitle>
-            <Button onClick={handleStartAdd} size="sm" className="h-7 text-xs">
+            <Button onClick={handleStartAdd} size="sm" className="h-7 text-xs flex-shrink-0">
               <Plus className="w-3 h-3 mr-1" />
               Novo
             </Button>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <ScrollArea className="h-[400px] pr-3">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <ScrollArea className="h-[250px] sm:h-[400px] pr-3">
               <div className="space-y-2">
                 {messages.map((message) => (
                   <div
@@ -1124,7 +1123,7 @@ export function Admin() {
 
         {/* Formulário de edição */}
         <Card className="glass-card border-white/10">
-          <CardHeader className="py-3 px-4">
+          <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
             <CardTitle className="text-white text-sm">
               {isAdding
                 ? "Novo Recado"
@@ -1133,7 +1132,7 @@ export function Admin() {
                   : "Selecione um Recado"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
             {isAdding || editingId ? (
               <div className="space-y-3">
                 <div className="space-y-1">
@@ -1265,16 +1264,16 @@ export function Admin() {
 
         {/* Pré-visualização */}
         <Card className="glass-card border-white/10">
-          <CardHeader className="py-3 px-4">
+          <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               <Eye className="w-4 h-4" />
               Pré-visualização
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
             {(isAdding || editingId) && (formTitle || formContent) ? (
               <div
-                className={`h-[400px] rounded-lg overflow-hidden ${
+                className={`h-[250px] sm:h-[400px] rounded-lg overflow-hidden ${
                   formPriority === "urgent"
                     ? "bg-gradient-to-br from-red-700 to-orange-600"
                     : "bg-white/5 border border-white/15"
@@ -1318,7 +1317,7 @@ export function Admin() {
                 </div>
               </div>
             ) : (
-              <div className="h-[400px] flex items-center justify-center text-white/40 border border-dashed border-white/20 rounded-lg">
+              <div className="h-[250px] sm:h-[400px] flex items-center justify-center text-white/40 border border-dashed border-white/20 rounded-lg">
                 <div className="text-center">
                   <Eye className="w-8 h-8 mx-auto mb-3 opacity-50" />
                   <p className="text-sm">Preencha o formulário</p>

@@ -119,7 +119,10 @@ export function useSignalR({
       if (retryTimerRef.current) return;
 
       const attempt = async () => {
-        if (connection.state === HubConnectionState.Connected) {
+        if (
+          connection.state === HubConnectionState.Connected ||
+          connection.state === HubConnectionState.Reconnecting
+        ) {
           retryTimerRef.current = null;
           return;
         }
@@ -188,6 +191,11 @@ export function useSignalR({
       console.log("[SignalR] Reconectado, re-entrando no grupo");
       setIsConnected(true);
       stopFallbackPolling();
+      // Cancela retry manual para evitar JoinPredio duplicado
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
       await connection.invoke("JoinPredio", slug, __APP_VERSION__);
       await syncAfterReconnect();
     });

@@ -265,7 +265,7 @@ function InternalNewsSlide({
       )}
 
       {/* Overlay gradiente */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+      <div className="absolute inset-0" />
 
       {/* Conteúdo */}
       <div className="relative h-full px-6 sm:px-8 py-6 flex flex-col justify-between text-white">
