@@ -8,7 +8,7 @@ interface DigitalClockProps {
 }
 
 export const DigitalClock = memo(function DigitalClock({ predio }: DigitalClockProps) {
-  const { timeFormatted, seconds, dateFormatted } = useClock();
+  const { timeFormatted, day, monthShort } = useClock();
 
   return (
     <div className="flex items-center gap-3">
@@ -28,15 +28,17 @@ export const DigitalClock = memo(function DigitalClock({ predio }: DigitalClockP
       {/* Separador */}
       <div className="w-px h-8 bg-white/20" />
 
-      {/* Relógio */}
-      <div className="text-right">
-        <div className="flex items-baseline gap-0.5">
-          <span className="text-2xl font-display font-bold text-white tabular-nums">
-            {timeFormatted}
-          </span>
-          <span className="text-sm text-white/50 tabular-nums">:{seconds}</span>
+      {/* Relógio — badge de data + hora */}
+      <div className="flex flex-col items-end gap-0.5">
+        {/* Linha superior: dia + mês rotacionado */}
+        <div className="clock-badge">
+          <span className="clock-badge-day">{day}</span>
+          <span className="clock-badge-month">{monthShort}</span>
         </div>
-        <p className="text-white/50 text-[10px] capitalize">{dateFormatted}</p>
+        {/* Linha inferior: hora */}
+        <span className="text-2xl font-display font-bold text-white tabular-nums leading-none">
+          {timeFormatted}
+        </span>
       </div>
     </div>
   );

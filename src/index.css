@@ -88,7 +88,7 @@
 }
 
 .dashboard-grid {
-  grid-template-rows: auto 1fr;
+  grid-template-rows: minmax(72px, auto) 1fr;
 }
 
 .dashboard-avisos {
@@ -173,7 +173,7 @@
 
 .force-landscape .dashboard-grid {
   grid-template-columns: 340px 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: minmax(72px, auto) 1fr;
 }
 
 .force-landscape .dashboard-avisos {
@@ -275,4 +275,43 @@
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-white/30;
+}
+
+/* ── Clock badge (dia + mês rotacionado) ── */
+.clock-badge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(6,182,212,0.18));
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: 0.5rem;
+  padding: 2px 6px 2px 8px;
+  line-height: 1;
+}
+
+.clock-badge-day {
+  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-badge-month {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: rgba(147,197,253,0.9);
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── Perf-mode overrides (dispositivos fracos) ── */
+html.perf-mode .clock-badge {
+  background: rgba(30,41,59,0.8);
+  border-color: rgba(255,255,255,0.15);
 }

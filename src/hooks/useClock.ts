@@ -22,11 +22,19 @@ export function useClock() {
     year: "numeric",
   });
 
+  const day = time.getDate().toString().padStart(2, "0");
+  const monthShort = time
+    .toLocaleDateString("pt-BR", { month: "short" })
+    .replace(".", "")
+    .toUpperCase();
+
   return {
     time,
     hours,
     minutes,
     seconds,
+    day,
+    monthShort,
     timeFormatted: `${hours}:${minutes}`,
     timeWithSeconds: `${hours}:${minutes}:${seconds}`,
     dateFormatted,

@@ -199,7 +199,7 @@ export function Dashboard() {
             </aside>
 
             {/* Barra superior com relogio, clima e status */}
-            <header className="flex items-center justify-between gap-3 px-2 dashboard-header">
+            <header className="flex items-center justify-between gap-3 px-2 py-2 dashboard-header">
               <DigitalClock predio={predio} />
 
               <div className="flex items-center gap-3">
