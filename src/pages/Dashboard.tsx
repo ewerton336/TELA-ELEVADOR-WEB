@@ -6,6 +6,7 @@ import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { WeatherCard } from "@/components/WeatherCard";
 import { MessageBoard } from "@/components/MessageBoard";
 import { NewsCarousel } from "@/components/NewsCarousel";
+import { NewsTicker } from "@/components/NewsTicker";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useSignalR } from "@/hooks/useSignalR";
 import {
@@ -188,11 +189,12 @@ export function Dashboard() {
   const showAvisos = modules.buildingNotice;
   const showWeather = modules.weather;
   const showNews = modules.headlineNews;
+  const showNewsTicker = modules.newsTicker;
 
   return (
     <div className="elevator-screen h-screen w-screen overflow-hidden">
       <div className="elevator-rotate">
-        <div className="relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame">
+        <div className={`relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame ${showNewsTicker ? "has-ticker" : ""}`}>
           <div className="absolute inset-0 bg-slate-950/60 dashboard-ambient" />
 
           <div className={`relative z-10 grid h-full ${showAvisos ? "grid-cols-[340px_1fr]" : "grid-cols-1"} gap-4 p-4 dashboard-grid`}>
@@ -237,8 +239,11 @@ export function Dashboard() {
             )}
           </div>
 
+          {/* Ticker de notícias no rodapé */}
+          <NewsTicker items={newsData?.items ?? []} visible={showNewsTicker} />
+
           {/* Créditos do desenvolvedor */}
-          <div className="absolute bottom-2 right-4 z-20">
+          <div className={`absolute ${showNewsTicker ? "bottom-10" : "bottom-2"} right-4 z-20`}>
             <p className="text-white/100 text-[10px]">
               Desenvolvido por Ewerton Guimarães • (13) 99782-7870
             </p>

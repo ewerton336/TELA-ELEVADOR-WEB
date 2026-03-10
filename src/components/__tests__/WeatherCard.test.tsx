@@ -115,6 +115,12 @@ describe("WeatherCard — lista de dias", () => {
 // ── Modo compacto (header) ──
 
 describe("WeatherCard — modo compacto", () => {
+  it("deve renderizar os rótulos 'Hoje' e 'Amanhã' em modo compacto", () => {
+    render(<WeatherCard data={makeWeatherData()} compact />);
+    expect(screen.getByText("Hoje")).toBeInTheDocument();
+    expect(screen.getByText("Amanhã")).toBeInTheDocument();
+  });
+
   it("deve renderizar temperaturas de hoje em modo compacto", () => {
     render(<WeatherCard data={makeWeatherData()} compact />);
     expect(screen.getByText("28°")).toBeInTheDocument();
@@ -173,6 +179,8 @@ describe("WeatherCard — dados incompletos", () => {
   it("deve renderizar apenas hoje em modo compacto quando há só 1 dia", () => {
     const data = makeWeatherData({ days: [makeDay()] });
     render(<WeatherCard data={data} compact />);
+    expect(screen.getByText("Hoje")).toBeInTheDocument();
+    expect(screen.queryByText("Amanhã")).not.toBeInTheDocument();
     expect(screen.getByText("28°")).toBeInTheDocument();
     // Não deve haver segundo bloco de temperatura
     expect(screen.queryByText("24°")).not.toBeInTheDocument();

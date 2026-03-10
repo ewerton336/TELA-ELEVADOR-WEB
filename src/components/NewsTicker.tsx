@@ -1,0 +1,42 @@
+import React, { useMemo } from "react";
+import type { NewsItem } from "@/services/newsService";
+
+interface NewsTickerProps {
+  items: NewsItem[];
+  visible: boolean;
+}
+
+const SEPARATOR = " \u2022 ";
+
+function NewsTickerInner({ items, visible }: NewsTickerProps) {
+  const tickerText = useMemo(() => {
+    if (!items || items.length === 0) return "";
+    return items.map((n) => n.title).join(SEPARATOR);
+  }, [items]);
+
+  if (!visible || !tickerText) return null;
+
+  return (
+    <div
+      className="news-ticker"
+      role="marquee"
+      aria-live="off"
+      aria-label="Ticker de notícias"
+    >
+      <span className="news-ticker-label">NOTÍCIAS</span>
+      <div className="news-ticker-track">
+        {/* Dois blocos idênticos para loop contínuo via CSS */}
+        <span className="news-ticker-content" aria-hidden="false">
+          {tickerText}
+          {SEPARATOR}
+        </span>
+        <span className="news-ticker-content" aria-hidden="true">
+          {tickerText}
+          {SEPARATOR}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export const NewsTicker = React.memo(NewsTickerInner);

@@ -87,12 +87,17 @@ export const WeatherCard = memo(function WeatherCard({
           {/* Hoje */}
           <div className="flex items-center gap-1.5">
             <span className="text-lg leading-none">{today.weatherIcon}</span>
-            <span className="text-white font-bold text-sm tabular-nums">
-              {today.temperatureMax}°
-            </span>
-            <span className="text-white/40 text-xs tabular-nums">
-              {today.temperatureMin}°
-            </span>
+            <div className="flex flex-col leading-none">
+              <span className="text-white/60 text-[10px] uppercase">Hoje</span>
+              <div className="flex items-center gap-1">
+                <span className="text-white font-bold text-sm tabular-nums">
+                  {today.temperatureMax}°
+                </span>
+                <span className="text-white/40 text-xs tabular-nums">
+                  {today.temperatureMin}°
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Amanhã */}
@@ -101,12 +106,17 @@ export const WeatherCard = memo(function WeatherCard({
               <span className="text-lg leading-none">
                 {data.days[1].weatherIcon}
               </span>
-              <span className="text-white/70 font-semibold text-sm tabular-nums">
-                {data.days[1].temperatureMax}°
-              </span>
-              <span className="text-white/35 text-xs tabular-nums">
-                {data.days[1].temperatureMin}°
-              </span>
+              <div className="flex flex-col leading-none">
+                <span className="text-white/50 text-[10px] uppercase">Amanhã</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-white/70 font-semibold text-sm tabular-nums">
+                    {data.days[1].temperatureMax}°
+                  </span>
+                  <span className="text-white/35 text-xs tabular-nums">
+                    {data.days[1].temperatureMin}°
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -387,3 +387,62 @@ html.perf-mode .internal-news-subtitle {
 html.perf-mode .internal-news-overlay {
   background: rgba(0,0,0,0.6);
 }
+
+/* ── News ticker (rodapé) ── */
+.news-ticker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.95) 100%);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
+.news-ticker-label {
+  flex-shrink: 0;
+  padding: 0 12px;
+  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: #facc15;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  user-select: none;
+}
+
+.news-ticker-track {
+  display: flex;
+  white-space: nowrap;
+  animation: ticker-scroll 45s linear infinite;
+}
+
+.news-ticker-content {
+  flex-shrink: 0;
+  padding-left: 2rem;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.85);
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Quando o ticker está ativo, o grid precisa de espaço inferior */
+.elevator-frame.has-ticker .dashboard-grid {
+  padding-bottom: 40px;
+}
+
+/* Perf-mode: ticker com fundo sólido e animação mais leve */
+html.perf-mode .news-ticker {
+  background: rgba(15,23,42,0.95);
+}
+
+html.perf-mode .news-ticker-track {
+  animation-duration: 60s;
+}
