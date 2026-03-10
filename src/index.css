@@ -75,6 +75,13 @@
 .elevator-screen {
   @apply h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
   position: relative;
+
+  /* ── Design tokens do dashboard ── */
+  --dash-gap: 1.25rem;
+  --dash-pad: 1.25rem;
+  --dash-sidebar-w: 340px;
+  --dash-header-min: 80px;
+  --ticker-h: 40px;
 }
 
 .elevator-rotate {
@@ -88,7 +95,9 @@
 }
 
 .dashboard-grid {
-  grid-template-rows: minmax(72px, auto) 1fr;
+  gap: var(--dash-gap);
+  padding: var(--dash-pad);
+  grid-template-rows: minmax(var(--dash-header-min), auto) 1fr;
 }
 
 .dashboard-avisos {
@@ -107,6 +116,11 @@
 }
 
 @media (orientation: portrait) {
+  .elevator-screen {
+    --dash-gap: 1.5rem;
+    --dash-pad: 1.5rem;
+  }
+
   .dashboard-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto 3fr 7fr;
@@ -132,10 +146,15 @@
   }
 }
 
+.force-portrait .elevator-screen {
+  --dash-gap: 1.5rem;
+  --dash-pad: 1.5rem;
+}
+
 .force-portrait .dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--dash-gap);
 }
 
 .force-portrait .dashboard-header {
@@ -172,8 +191,8 @@
 }
 
 .force-landscape .dashboard-grid {
-  grid-template-columns: 340px 1fr;
-  grid-template-rows: minmax(72px, auto) 1fr;
+  grid-template-columns: var(--dash-sidebar-w) 1fr;
+  grid-template-rows: minmax(var(--dash-header-min), auto) 1fr;
 }
 
 .force-landscape .dashboard-avisos {
@@ -394,7 +413,7 @@ html.perf-mode .internal-news-overlay {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 36px;
+  height: var(--ticker-h);
   z-index: 30;
   display: flex;
   align-items: center;
@@ -435,7 +454,7 @@ html.perf-mode .internal-news-overlay {
 
 /* Quando o ticker está ativo, o grid precisa de espaço inferior */
 .elevator-frame.has-ticker .dashboard-grid {
-  padding-bottom: 40px;
+  padding-bottom: calc(var(--ticker-h) + 6px);
 }
 
 /* Perf-mode: ticker com fundo sólido e animação mais leve */

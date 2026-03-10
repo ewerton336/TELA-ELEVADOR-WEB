@@ -175,7 +175,7 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
               {/* Gradient scrim for text legibility */}
               <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-              <div className="relative h-full px-6 sm:px-8 py-6 flex flex-col justify-between text-white">
+              <div className="relative h-full px-8 sm:px-10 py-8 flex flex-col justify-between text-white">
                 <div className="flex items-center justify-between gap-3 text-sm text-white/80">
                   <div className="flex items-center gap-2">
                     <div className="bg-orange-500/75 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
@@ -193,7 +193,7 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
                   </span>
                 </div>
 
-                <div className="flex flex-col gap-3 max-w-[72%] news-content pb-2">
+                <div className="flex flex-col gap-3 max-w-[72%] news-content pb-4">
                   <h3 className="text-white font-black text-2xl sm:text-3xl md:text-4xl leading-tight">
                     {item.title}
                   </h3>
@@ -297,7 +297,7 @@ export function InternalNewsSlide({
       )}
 
       {/* Content */}
-      <div className="relative h-full px-6 sm:px-8 py-6 flex flex-col justify-between text-white">
+      <div className="relative h-full px-8 sm:px-10 py-8 flex flex-col justify-between text-white">
         <div className="flex items-center gap-2">
           <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
             📢 Condomínio
@@ -305,7 +305,7 @@ export function InternalNewsSlide({
         </div>
 
         {hasText && (
-          <div className="flex flex-col gap-2 max-w-[85%] pb-2">
+          <div className="flex flex-col gap-3 max-w-[85%] pb-4">
             {hasTitle && (
               <h3 className="internal-news-title font-black text-2xl sm:text-3xl md:text-4xl leading-tight text-white">
                 {item.titulo}

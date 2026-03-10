@@ -173,7 +173,7 @@ function MetaBlock({
 
   return (
     <div
-      className={`msg-meta-block flex items-center gap-3 px-4 py-2 mx-5 rounded-lg border ${colorClass} flex-shrink-0`}
+      className={`msg-meta-block flex items-center gap-3 px-4 py-2.5 mx-6 rounded-lg border ${colorClass} flex-shrink-0`}
     >
       <div className="flex items-center gap-1.5">
         <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
@@ -201,7 +201,7 @@ function NormalCard({
   return (
     <div className="msg-card h-full flex flex-col rounded-2xl border border-white/10 bg-slate-800/40 overflow-hidden">
       {/* Bloco 1 — Tipo + contador */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
             <MessageSquare className="w-4 h-4 text-orange-400" />
@@ -218,11 +218,11 @@ function NormalCard({
       </div>
 
       {/* Separador */}
-      <div className="mx-5 h-px bg-white/8 flex-shrink-0" />
+      <div className="mx-6 h-px bg-white/8 flex-shrink-0" />
 
       {/* Bloco 2 — Título */}
       {message.title && (
-        <h2 className="text-[1.4rem] font-bold leading-tight text-white px-5 pt-4 pb-1 flex-shrink-0">
+        <h2 className="text-[1.4rem] font-bold leading-tight text-white px-6 pt-4 pb-1 flex-shrink-0">
           {message.title}
         </h2>
       )}
@@ -235,9 +235,9 @@ function NormalCard({
       )}
 
       {/* Bloco 4 — Conteúdo */}
-      <div className="flex-1 overflow-y-auto px-5 pb-5 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
         <div
-          className="msg-content text-white/75 text-[0.95rem] leading-relaxed"
+          className="msg-content text-white/75 text-base sm:text-lg leading-relaxed"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
       </div>
@@ -258,7 +258,7 @@ function UrgentCard({
   return (
     <div className="msg-card msg-card--urgent h-full flex flex-col rounded-2xl border-2 border-red-500/50 bg-red-950/80 overflow-hidden">
       {/* Bloco 1 — Badge urgente + contador */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-red-500/25 flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="w-4 h-4 text-red-300" />
@@ -275,11 +275,11 @@ function UrgentCard({
       </div>
 
       {/* Separador */}
-      <div className="mx-5 h-px bg-red-400/15 flex-shrink-0" />
+      <div className="mx-6 h-px bg-red-400/15 flex-shrink-0" />
 
       {/* Bloco 2 — Título */}
       {message.title && (
-        <h2 className="text-[1.4rem] font-bold leading-tight text-white px-5 pt-4 pb-1 flex-shrink-0">
+        <h2 className="text-[1.4rem] font-bold leading-tight text-white px-6 pt-4 pb-1 flex-shrink-0">
           {message.title}
         </h2>
       )}
@@ -292,9 +292,9 @@ function UrgentCard({
       )}
 
       {/* Bloco 4 — Conteúdo */}
-      <div className="flex-1 overflow-y-auto px-5 pb-5 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
         <div
-          className="msg-content text-white/85 text-[0.95rem] leading-relaxed"
+          className="msg-content text-white/85 text-base sm:text-lg leading-relaxed"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
       </div>

@@ -197,20 +197,20 @@ export function Dashboard() {
         <div className={`relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame ${showNewsTicker ? "has-ticker" : ""}`}>
           <div className="absolute inset-0 bg-slate-950/60 dashboard-ambient" />
 
-          <div className={`relative z-10 grid h-full ${showAvisos ? "grid-cols-[340px_1fr]" : "grid-cols-1"} gap-4 p-4 dashboard-grid`}>
+          <div className={`relative z-10 grid h-full ${showAvisos ? "grid-cols-[var(--dash-sidebar-w)_1fr]" : "grid-cols-1"} dashboard-grid`}>
             {/* Coluna de avisos à esquerda */}
             {showAvisos && (
               <aside
                 className="h-full rounded-2xl bg-[#261446] border border-white/10 overflow-hidden dashboard-avisos"
               >
-                <div className="h-full px-4 py-3">
+                <div className="h-full px-5 py-4">
                   <MessageBoard messages={messages} />
                 </div>
               </aside>
             )}
 
             {/* Barra superior com relogio, clima e status */}
-            <header className="flex items-center justify-between gap-3 px-2 py-2 dashboard-header">
+            <header className="flex items-center justify-between gap-4 px-3 py-3 dashboard-header">
               <DigitalClock predio={predio} />
 
               <div className="flex items-center gap-3">
