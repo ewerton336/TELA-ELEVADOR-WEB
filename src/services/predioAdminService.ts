@@ -1,5 +1,5 @@
 import { requestJson } from "@/services/apiClient";
-import type { OrientationMode } from "@/services/predioService";
+import type { OrientationMode, ScreenModules } from "@/services/predioService";
 
 type PredioOrientationResponse = {
   orientationMode: OrientationMode;
@@ -37,5 +37,40 @@ export async function updatePredioOrientation(
       body: JSON.stringify({ orientationMode }),
     },
     "updatePredioOrientation",
+  );
+}
+
+export async function getScreenModules(
+  slug: string,
+  token: string | null,
+): Promise<ScreenModules> {
+  return await requestJson<ScreenModules>(
+    slug,
+    "/admin/predio/modulos",
+    {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    },
+    "getScreenModules",
+  );
+}
+
+export async function updateScreenModules(
+  slug: string,
+  token: string | null,
+  modules: ScreenModules,
+): Promise<ScreenModules> {
+  return await requestJson<ScreenModules>(
+    slug,
+    "/admin/predio/modulos",
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(modules),
+    },
+    "updateScreenModules",
   );
 }

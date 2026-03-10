@@ -15,7 +15,7 @@ import {
 } from "@/services/weatherService";
 import { fetchNews, getCachedNews, NewsData } from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
-import { getPredio, OrientationMode, Predio } from "@/services/predioService";
+import { getPredio, OrientationMode, Predio, ScreenModules, DEFAULT_MODULES } from "@/services/predioService";
 import { getNoticiasInternas, NoticiaInterna } from "@/services/noticiaInternaService";
 
 export function Dashboard() {
@@ -27,6 +27,7 @@ export function Dashboard() {
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
   const [predio, setPredio] = useState<Predio | null>(null);
+  const [modules, setModules] = useState<ScreenModules>(DEFAULT_MODULES);
 
   useEffect(() => {
     if (!slug) {
@@ -47,6 +48,7 @@ export function Dashboard() {
       });
     },
     onNoticiasInternasReceived: (noticias) => queryClient.setQueryData(["noticiasInternas", slug], noticias),
+    onModulesReceived: (m) => setModules(m),
   });
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export function Dashboard() {
         setPredio(predioData);
         document.title = predioData.nome;
         setOrientationMode(predioData.orientationMode ?? "auto");
+        if (predioData.modules) setModules(predioData.modules);
       } catch (err) {
         console.error("Erro ao carregar predio:", err);
       }
@@ -182,34 +185,42 @@ export function Dashboard() {
     }
   }, [newsData, newsError]);
 
+  const showAvisos = modules.buildingNotice;
+  const showWeather = modules.weather;
+  const showNews = modules.headlineNews;
+
   return (
     <div className="elevator-screen h-screen w-screen overflow-hidden">
       <div className="elevator-rotate">
         <div className="relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame">
           <div className="absolute inset-0 bg-slate-950/60 dashboard-ambient" />
 
-          <div className="relative z-10 grid h-full grid-cols-[340px_1fr] gap-4 p-4 dashboard-grid">
+          <div className={`relative z-10 grid h-full ${showAvisos ? "grid-cols-[340px_1fr]" : "grid-cols-1"} gap-4 p-4 dashboard-grid`}>
             {/* Coluna de avisos à esquerda */}
-            <aside
-              className="h-full rounded-2xl bg-[#261446] border border-white/10 overflow-hidden dashboard-avisos"
-            >
-              <div className="h-full px-4 py-3">
-                <MessageBoard messages={messages} />
-              </div>
-            </aside>
+            {showAvisos && (
+              <aside
+                className="h-full rounded-2xl bg-[#261446] border border-white/10 overflow-hidden dashboard-avisos"
+              >
+                <div className="h-full px-4 py-3">
+                  <MessageBoard messages={messages} />
+                </div>
+              </aside>
+            )}
 
             {/* Barra superior com relogio, clima e status */}
             <header className="flex items-center justify-between gap-3 px-2 py-2 dashboard-header">
               <DigitalClock predio={predio} />
 
               <div className="flex items-center gap-3">
-                <div className="max-w-sm">
-                  <WeatherCard
-                    data={weatherData ?? null}
-                    isLoading={weatherLoading}
-                    compact
-                  />
-                </div>
+                {showWeather && (
+                  <div className="max-w-sm">
+                    <WeatherCard
+                      data={weatherData ?? null}
+                      isLoading={weatherLoading}
+                      compact
+                    />
+                  </div>
+                )}
 
                 <ConnectionStatus
                   isSyncing={isSyncing}
@@ -219,9 +230,11 @@ export function Dashboard() {
             </header>
 
             {/* Carrossel de noticias */}
-            <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 dashboard-news">
-              <NewsCarousel data={newsData ?? null} isLoading={newsLoading} error={newsError} noticiasInternas={noticiasInternas} />
-            </div>
+            {showNews && (
+              <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 dashboard-news">
+                <NewsCarousel data={newsData ?? null} isLoading={newsLoading} error={newsError} noticiasInternas={noticiasInternas} />
+              </div>
+            )}
           </div>
 
           {/* Créditos do desenvolvedor */}

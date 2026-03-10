@@ -6,7 +6,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { getMessages, Message } from "@/services/messageService";
-import { getPredio, OrientationMode } from "@/services/predioService";
+import { getPredio, OrientationMode, ScreenModules } from "@/services/predioService";
 import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaService";
 
 interface UseSignalROptions {
@@ -14,6 +14,7 @@ interface UseSignalROptions {
   onAvisosReceived: (messages: Message[]) => void;
   onOrientationReceived: (mode: OrientationMode) => void;
   onNoticiasInternasReceived?: (noticias: NoticiaInterna[]) => void;
+  onModulesReceived?: (modules: ScreenModules) => void;
 }
 
 export function useSignalR({
@@ -21,6 +22,7 @@ export function useSignalR({
   onAvisosReceived,
   onOrientationReceived,
   onNoticiasInternasReceived,
+  onModulesReceived,
 }: UseSignalROptions) {
   const connectionRef = useRef<HubConnection | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -35,6 +37,8 @@ export function useSignalR({
   onOrientationRef.current = onOrientationReceived;
   const onNoticiasInternasRef = useRef(onNoticiasInternasReceived);
   onNoticiasInternasRef.current = onNoticiasInternasReceived;
+  const onModulesRef = useRef(onModulesReceived);
+  onModulesRef.current = onModulesReceived;
 
   // Mapeia avisos do formato da API para Message[]
   const mapAvisosToMessages = useCallback(
@@ -77,6 +81,7 @@ export function useSignalR({
         const predioData = await getPredio(slug);
         const mode = predioData.orientationMode ?? "auto";
         onOrientationRef.current(mode);
+        if (predioData.modules) onModulesRef.current?.(predioData.modules);
       } catch {
         // silencioso
       }
@@ -102,6 +107,7 @@ export function useSignalR({
     try {
       const predioData = await getPredio(slug);
       onOrientationRef.current(predioData.orientationMode ?? "auto");
+      if (predioData.modules) onModulesRef.current?.(predioData.modules);
     } catch {
       // silencioso
     }
@@ -171,6 +177,13 @@ export function useSignalR({
       if (Array.isArray(noticias)) {
         console.log("[SignalR] Notícias internas recebidas:", noticias.length);
         onNoticiasInternasRef.current?.(noticias as NoticiaInterna[]);
+      }
+    });
+
+    connection.on("ReceiveModules", (modules: unknown) => {
+      if (modules && typeof modules === "object") {
+        console.log("[SignalR] Módulos recebidos:", modules);
+        onModulesRef.current?.(modules as ScreenModules);
       }
     });
 
