@@ -244,7 +244,7 @@ export function Dashboard() {
 
           {/* Créditos do desenvolvedor */}
           <div className={`absolute ${showNewsTicker ? "bottom-10" : "bottom-2"} right-4 z-20`}>
-            <p className="text-white/100 text-[10px]">
+            <p className="text-white/100 text-[14px]">
               Desenvolvido por Ewerton Guimarães • (13) 99782-7870
             </p>
           </div>

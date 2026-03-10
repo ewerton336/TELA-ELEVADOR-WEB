@@ -23,7 +23,6 @@ function NewsTickerInner({ items, visible }: NewsTickerProps) {
       aria-live="off"
       aria-label="Ticker de notícias"
     >
-      <span className="news-ticker-label">NOTÍCIAS</span>
       <div className="news-ticker-track">
         {/* Dois blocos idênticos para loop contínuo via CSS */}
         <span className="news-ticker-content" aria-hidden="false">

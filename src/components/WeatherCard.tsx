@@ -82,18 +82,18 @@ export const WeatherCard = memo(function WeatherCard({
     const today = data.days[0];
 
     return (
-      <div className="glass-card rounded-lg px-3 py-1.5">
-        <div className="flex items-center gap-3">
+      <div className="glass-card rounded-lg px-4 py-2">
+        <div className="flex items-center gap-4">
           {/* Hoje */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-lg leading-none">{today.weatherIcon}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl leading-none">{today.weatherIcon}</span>
             <div className="flex flex-col leading-none">
-              <span className="text-white/60 text-[10px] uppercase">Hoje</span>
+              <span className="text-white/60 text-xs font-medium uppercase">Hoje</span>
               <div className="flex items-center gap-1">
-                <span className="text-white font-bold text-sm tabular-nums">
+                <span className="text-white font-bold text-lg tabular-nums">
                   {today.temperatureMax}°
                 </span>
-                <span className="text-white/40 text-xs tabular-nums">
+                <span className="text-white/40 text-sm tabular-nums">
                   {today.temperatureMin}°
                 </span>
               </div>
@@ -102,17 +102,17 @@ export const WeatherCard = memo(function WeatherCard({
 
           {/* Amanhã */}
           {data.days[1] && (
-            <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
-              <span className="text-lg leading-none">
+            <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+              <span className="text-2xl leading-none">
                 {data.days[1].weatherIcon}
               </span>
               <div className="flex flex-col leading-none">
-                <span className="text-white/50 text-[10px] uppercase">Amanhã</span>
+                <span className="text-white/50 text-xs font-medium uppercase">Amanhã</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-white/70 font-semibold text-sm tabular-nums">
+                  <span className="text-white/70 font-semibold text-lg tabular-nums">
                     {data.days[1].temperatureMax}°
                   </span>
-                  <span className="text-white/35 text-xs tabular-nums">
+                  <span className="text-white/35 text-sm tabular-nums">
                     {data.days[1].temperatureMin}°
                   </span>
                 </div>

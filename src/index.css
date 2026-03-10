@@ -437,7 +437,7 @@ html.perf-mode .internal-news-overlay {
 .news-ticker-track {
   display: flex;
   white-space: nowrap;
-  animation: ticker-scroll 45s linear infinite;
+  animation: ticker-scroll 90s linear infinite;
 }
 
 .news-ticker-content {
@@ -463,5 +463,5 @@ html.perf-mode .news-ticker {
 }
 
 html.perf-mode .news-ticker-track {
-  animation-duration: 60s;
+  animation-duration: 120s;
 }

@@ -1,6 +1,22 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// Radix Dialog hangs in jsdom (Presence + FocusScope loops). Replace with simple elements.
+vi.mock("@/components/ui/dialog", async () => {
+  const React = await import("react");
+  return {
+    Dialog: ({ children, open }: any) =>
+      open ? React.createElement("div", { role: "dialog" }, children) : null,
+    DialogContent: ({ children }: any) =>
+      React.createElement("div", null, children),
+    DialogHeader: ({ children }: any) =>
+      React.createElement("div", null, children),
+    DialogTitle: ({ children }: any) =>
+      React.createElement("h2", null, children),
+  };
+});
+
 import { FormDialog } from "../FormDialog";
 
 describe("FormDialog", () => {
