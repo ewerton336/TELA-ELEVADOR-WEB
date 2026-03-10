@@ -17,25 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as masterService from "@/services/masterService";
 import { messageService } from "@/services/messageService";
 import { CidadeSelector } from "@/components/CidadeSelector";
 import { ScreenMonitor } from "@/components/ScreenMonitor";
+import { FormDialog } from "@/components/FormDialog";
+import { CrudList } from "@/components/CrudList";
 
 export default function Master() {
   const [loginUsername, setLoginUsername] = useState("");
@@ -47,7 +35,6 @@ export default function Master() {
   const [predios, setPredios] = useState<masterService.Predio[]>([]);
   const [predioLoading, setPredioLoading] = useState(false);
   const [showPredioDialog, setShowPredioDialog] = useState(false);
-  const [predioToDelete, setPredioToDelete] = useState<number | null>(null);
   const [predioForm, setPredioForm] = useState({
     slug: "",
     nome: "",
@@ -59,7 +46,6 @@ export default function Master() {
   const [sindicos, setSindicos] = useState<masterService.Sindico[]>([]);
   const [sindicoLoading, setSindicoLoading] = useState(false);
   const [showSindicoDialog, setShowSindicoDialog] = useState(false);
-  const [sindicoToDelete, setSindicoToDelete] = useState<number | null>(null);
   const [selectedPredioForSindicos, setSelectedPredioForSindicos] = useState<
     number | null
   >(null);
@@ -131,34 +117,6 @@ export default function Master() {
     }
   };
 
-  const handleSavePredio = async () => {
-    if (!predioForm.slug || !predioForm.nome || !predioForm.cidade) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
-
-    setPredioLoading(true);
-    try {
-      if (editingPredioId) {
-        await masterService.updatePredio(token, editingPredioId, predioForm);
-        toast.success("Prédio atualizado com sucesso");
-      } else {
-        await masterService.createPredio(token, predioForm);
-        toast.success("Prédio criado com sucesso");
-      }
-      setPredioForm({ slug: "", nome: "", cidade: "" });
-      setEditingPredioId(null);
-      setShowPredioDialog(false);
-      await loadPredios();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao salvar prédio",
-      );
-    } finally {
-      setPredioLoading(false);
-    }
-  };
-
   const handleEditPredio = (predio: masterService.Predio) => {
     setPredioForm({
       slug: predio.slug,
@@ -169,14 +127,11 @@ export default function Master() {
     setShowPredioDialog(true);
   };
 
-  const handleDeletePredio = async () => {
-    if (!predioToDelete) return;
-
+  const handleDeletePredio = async (predio: masterService.Predio) => {
     setPredioLoading(true);
     try {
-      await masterService.deletePredio(token, predioToDelete);
+      await masterService.deletePredio(token, predio.id);
       toast.success("Prédio deletado com sucesso");
-      setPredioToDelete(null);
       await loadPredios();
     } catch (error) {
       toast.error(
@@ -200,53 +155,6 @@ export default function Master() {
     }
   };
 
-  const handleSaveSindico = async () => {
-    if (!selectedPredioForSindicos) {
-      toast.error("Selecione um prédio");
-      return;
-    }
-
-    if (!sindicoForm.usuario || !sindicoForm.senha) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
-
-    setSindicoLoading(true);
-    try {
-      if (editingSindicoId) {
-        const updateData: { usuario?: string; senha?: string } = {};
-        if (
-          sindicoForm.usuario !==
-          sindicos.find((s) => s.id === editingSindicoId)?.usuario
-        ) {
-          updateData.usuario = sindicoForm.usuario;
-        }
-        if (sindicoForm.senha) {
-          updateData.senha = sindicoForm.senha;
-        }
-        await masterService.updateSindico(token, editingSindicoId, updateData);
-        toast.success("Sindico atualizado com sucesso");
-      } else {
-        await masterService.createSindico(token, {
-          predioId: selectedPredioForSindicos,
-          usuario: sindicoForm.usuario,
-          senha: sindicoForm.senha,
-        });
-        toast.success("Sindico criado com sucesso");
-      }
-      setSindicoForm({ usuario: "", senha: "" });
-      setEditingSindicoId(null);
-      setShowSindicoDialog(false);
-      await loadSindicos(selectedPredioForSindicos);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao salvar sindico",
-      );
-    } finally {
-      setSindicoLoading(false);
-    }
-  };
-
   const handleEditSindico = (sindico: masterService.Sindico) => {
     setSindicoForm({
       usuario: sindico.usuario,
@@ -256,14 +164,13 @@ export default function Master() {
     setShowSindicoDialog(true);
   };
 
-  const handleDeleteSindico = async () => {
-    if (!sindicoToDelete || !selectedPredioForSindicos) return;
+  const handleDeleteSindico = async (sindico: masterService.Sindico) => {
+    if (!selectedPredioForSindicos) return;
 
     setSindicoLoading(true);
     try {
-      await masterService.deleteSindico(token, sindicoToDelete);
+      await masterService.deleteSindico(token, sindico.id);
       toast.success("Sindico deletado com sucesso");
-      setSindicoToDelete(null);
       await loadSindicos(selectedPredioForSindicos);
     } catch (error) {
       toast.error(
@@ -355,117 +262,78 @@ export default function Master() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {predioLoading ? (
-                  <p className="text-center text-slate-500">
-                    Carregando prédios...
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {predios.length === 0 ? (
-                      <p className="text-center text-slate-500">
-                        Nenhum prédio cadastrado
+                <CrudList
+                  items={predios}
+                  getKey={(p) => p.id}
+                  loading={predioLoading}
+                  emptyMessage="Nenhum prédio cadastrado"
+                  deleteConfirmMessage="Tem certeza que deseja deletar este prédio? Esta ação não pode ser desfeita."
+                  renderItem={(predio) => (
+                    <div>
+                      <p className="font-semibold">{predio.nome}</p>
+                      <p className="text-sm text-slate-500">
+                        {predio.slug} • {predio.cidade}
                       </p>
-                    ) : (
-                      predios.map((predio) => (
-                        <div
-                          key={predio.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50"
-                        >
-                          <div>
-                            <p className="font-semibold">{predio.nome}</p>
-                            <p className="text-sm text-slate-500">
-                              {predio.slug} • {predio.cidade}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditPredio(predio)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-500 hover:text-red-700"
-                              onClick={() => {
-                                setPredioToDelete(predio.id);
-                              }}
-                            >
-                              Deletar
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                  onEdit={handleEditPredio}
+                  onDelete={handleDeletePredio}
+                />
               </CardContent>
             </Card>
 
-            <Dialog open={showPredioDialog} onOpenChange={setShowPredioDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingPredioId ? "Editar" : "Novo"} Prédio
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug</Label>
-                    <Input
-                      id="slug"
-                      value={predioForm.slug}
-                      onChange={(e) =>
-                        setPredioForm({
-                          ...predioForm,
-                          slug: e.target.value,
-                        })
-                      }
-                      placeholder="ex: gramado"
-                      disabled={editingPredioId !== null}
+            <FormDialog
+              open={showPredioDialog}
+              onOpenChange={setShowPredioDialog}
+              title={editingPredioId ? "Editar Prédio" : "Novo Prédio"}
+              initialValues={predioForm}
+              loading={predioLoading}
+              fields={[
+                {
+                  name: "slug",
+                  label: "Slug",
+                  placeholder: "ex: gramado",
+                  required: true,
+                  disabled: editingPredioId !== null,
+                },
+                {
+                  name: "nome",
+                  label: "Nome",
+                  placeholder: "ex: Edificio Central",
+                  required: true,
+                },
+                {
+                  name: "cidade",
+                  label: "Cidade",
+                  render: (value, onChange) => (
+                    <CidadeSelector
+                      value={value}
+                      onChange={onChange}
+                      required={true}
+                      disabled={false}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome</Label>
-                    <Input
-                      id="nome"
-                      value={predioForm.nome}
-                      onChange={(e) =>
-                        setPredioForm({
-                          ...predioForm,
-                          nome: e.target.value,
-                        })
-                      }
-                      placeholder="ex: Edificio Central"
-                    />
-                  </div>
-                  <CidadeSelector
-                    value={predioForm.cidade}
-                    onChange={(value) =>
-                      setPredioForm({
-                        ...predioForm,
-                        cidade: value,
-                      })
-                    }
-                    required={true}
-                    disabled={false}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowPredioDialog(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleSavePredio} disabled={predioLoading}>
-                      {predioLoading ? "Salvando..." : "Salvar"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                  ),
+                },
+              ]}
+              onSubmit={async (data) => {
+                if (!data.slug || !data.nome || !data.cidade) {
+                  toast.error("Preencha todos os campos");
+                  return;
+                }
+                const payload = { slug: data.slug, nome: data.nome, cidade: data.cidade };
+                if (editingPredioId) {
+                  await masterService.updatePredio(token, editingPredioId, payload);
+                  toast.success("Prédio atualizado com sucesso");
+                } else {
+                  await masterService.createPredio(token, payload);
+                  toast.success("Prédio criado com sucesso");
+                }
+                setPredioForm({ slug: "", nome: "", cidade: "" });
+                setEditingPredioId(null);
+                setShowPredioDialog(false);
+                await loadPredios();
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="sindicos">
@@ -521,124 +389,86 @@ export default function Master() {
                         </Button>
                       </div>
 
-                      {sindicoLoading ? (
-                        <p className="text-center text-slate-500">
-                          Carregando sindicos...
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {sindicos.length === 0 ? (
-                            <p className="text-center text-slate-500">
-                              Nenhum sindico cadastrado para este prédio
+                      <CrudList
+                        items={sindicos}
+                        getKey={(s) => s.id}
+                        loading={sindicoLoading}
+                        emptyMessage="Nenhum sindico cadastrado para este prédio"
+                        deleteConfirmMessage="Tem certeza que deseja deletar este sindico? Esta ação não pode ser desfeita."
+                        renderItem={(sindico) => (
+                          <div>
+                            <p className="font-semibold">
+                              {sindico.usuario}
                             </p>
-                          ) : (
-                            sindicos.map((sindico) => (
-                              <div
-                                key={sindico.id}
-                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50"
-                              >
-                                <div>
-                                  <p className="font-semibold">
-                                    {sindico.usuario}
-                                  </p>
-                                  <p className="text-sm text-slate-500">
-                                    {sindico.role}
-                                  </p>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleEditSindico(sindico)}
-                                  >
-                                    Editar
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-red-500 hover:text-red-700"
-                                    onClick={() => {
-                                      setSindicoToDelete(sindico.id);
-                                    }}
-                                  >
-                                    Deletar
-                                  </Button>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
+                            <p className="text-sm text-slate-500">
+                              {sindico.role}
+                            </p>
+                          </div>
+                        )}
+                        onEdit={handleEditSindico}
+                        onDelete={handleDeleteSindico}
+                      />
                     </>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            <Dialog
+            <FormDialog
               open={showSindicoDialog}
               onOpenChange={setShowSindicoDialog}
-            >
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingSindicoId ? "Editar" : "Novo"} Sindico
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="usuario">Usuário</Label>
-                    <Input
-                      id="usuario"
-                      value={sindicoForm.usuario}
-                      onChange={(e) =>
-                        setSindicoForm({
-                          ...sindicoForm,
-                          usuario: e.target.value,
-                        })
-                      }
-                      placeholder="ex: admin@edificio.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="senha">
-                      Senha
-                      {editingSindicoId && (
-                        <span className="text-sm text-slate-500 ml-2">
-                          (deixe em branco para não alterar)
-                        </span>
-                      )}
-                    </Label>
-                    <Input
-                      id="senha"
-                      type="password"
-                      value={sindicoForm.senha}
-                      onChange={(e) =>
-                        setSindicoForm({
-                          ...sindicoForm,
-                          senha: e.target.value,
-                        })
-                      }
-                      placeholder="ex: senha123"
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowSindicoDialog(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleSaveSindico}
-                      disabled={sindicoLoading}
-                    >
-                      {sindicoLoading ? "Salvando..." : "Salvar"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+              title={editingSindicoId ? "Editar Sindico" : "Novo Sindico"}
+              initialValues={sindicoForm}
+              loading={sindicoLoading}
+              fields={[
+                {
+                  name: "usuario",
+                  label: "Usuário",
+                  placeholder: "ex: admin@edificio.com",
+                  required: true,
+                },
+                {
+                  name: "senha",
+                  label: "Senha",
+                  type: "password",
+                  placeholder: "ex: senha123",
+                  required: !editingSindicoId,
+                  hint: editingSindicoId ? "(deixe em branco para não alterar)" : undefined,
+                },
+              ]}
+              onSubmit={async (data) => {
+                if (!selectedPredioForSindicos) {
+                  toast.error("Selecione um prédio");
+                  return;
+                }
+                if (!data.usuario || (!editingSindicoId && !data.senha)) {
+                  toast.error("Preencha todos os campos");
+                  return;
+                }
+                if (editingSindicoId) {
+                  const updateData: { usuario?: string; senha?: string } = {};
+                  if (data.usuario !== sindicos.find((s) => s.id === editingSindicoId)?.usuario) {
+                    updateData.usuario = data.usuario;
+                  }
+                  if (data.senha) {
+                    updateData.senha = data.senha;
+                  }
+                  await masterService.updateSindico(token, editingSindicoId, updateData);
+                  toast.success("Sindico atualizado com sucesso");
+                } else {
+                  await masterService.createSindico(token, {
+                    predioId: selectedPredioForSindicos,
+                    usuario: data.usuario,
+                    senha: data.senha,
+                  });
+                  toast.success("Sindico criado com sucesso");
+                }
+                setSindicoForm({ usuario: "", senha: "" });
+                setEditingSindicoId(null);
+                setShowSindicoDialog(false);
+                await loadSindicos(selectedPredioForSindicos);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="monitor">
@@ -647,53 +477,7 @@ export default function Master() {
         </Tabs>
       </div>
 
-      <AlertDialog
-        open={predioToDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setPredioToDelete(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogTitle>Confirmar Deleção</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja deletar este prédio? Esta ação não pode ser
-            desfeita.
-          </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePredio}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Deletar
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
 
-      <AlertDialog
-        open={sindicoToDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setSindicoToDelete(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogTitle>Confirmar Deleção</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja deletar este sindico? Esta ação não pode ser
-            desfeita.
-          </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteSindico}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Deletar
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

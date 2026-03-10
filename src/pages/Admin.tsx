@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/FormField";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,6 +57,8 @@ import {
   RotateCcw,
   MonitorSmartphone,
 } from "lucide-react";
+import { ModuleToggleCard } from "@/components/ModuleToggleCard";
+import { formatDateShort } from "@/lib/dateFormatter";
 import { toast } from "sonner";
 import * as predioAdminService from "@/services/predioAdminService";
 import type { OrientationMode, ScreenModules } from "@/services/predioService";
@@ -388,8 +392,6 @@ export function Admin() {
   const handleForceLoad = async (fonteChave?: string) => {
     if (!token) return;
 
-    const loadingKey = fonteChave || "all";
-
     if (fonteChave) {
       setLoadingHealthcheck((prev) => ({ ...prev, [fonteChave]: true }));
     } else {
@@ -597,7 +599,7 @@ export function Admin() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 sm:p-6">
-        <Card className="w-full max-w-md glass-card border-white/10">
+        <GlassCard className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto p-4 rounded-full bg-blue-500/20 w-fit mb-4">
               <Lock className="w-8 h-8 text-blue-400" />
@@ -648,7 +650,7 @@ export function Admin() {
               </Button>
             </form>
           </CardContent>
-        </Card>
+        </GlassCard>
       </div>
     );
   }
@@ -687,7 +689,7 @@ export function Admin() {
         </Button>
       </header>
 
-      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+      <GlassCard spacing="sm">
           <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               Modo de exibicao da tela
@@ -723,10 +725,10 @@ export function Admin() {
               </Select>
             </div>
           </CardContent>
-        </Card>
+        </GlassCard>
 
       {/* Módulos da Tela */}
-      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+      <GlassCard spacing="sm">
         <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
           <CardTitle className="text-white flex items-center gap-2 text-sm">
             <MonitorSmartphone className="w-4 h-4 flex-shrink-0" />
@@ -748,113 +750,34 @@ export function Admin() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mb-4">
-            {/* Card: Aviso do prédio */}
-            <div className={`flex flex-col p-3 rounded-lg border transition-all ${
-              screenModules.buildingNotice
-                ? "border-green-500/30 bg-green-500/10"
-                : "border-white/10 bg-white/5 opacity-60"
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`p-2 rounded-lg ${screenModules.buildingNotice ? "bg-green-500/20" : "bg-white/10"}`}>
-                    <MessageSquare className={`w-4 h-4 ${screenModules.buildingNotice ? "text-green-400" : "text-white/40"}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`font-medium text-sm ${screenModules.buildingNotice ? "text-white" : "text-white/50"}`}>
-                      Aviso do prédio
-                    </p>
-                    <p className="text-white/30 text-[10px]">Comunicados do condomínio</p>
-                  </div>
-                </div>
-                <Switch checked={screenModules.buildingNotice} onCheckedChange={() => handleToggleModule("buildingNotice")} />
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${
-                screenModules.buildingNotice ? "bg-green-500/20 text-green-300" : "bg-white/10 text-white/40"
-              }`}>
-                {screenModules.buildingNotice ? "Ativado" : "Desativado"}
-              </span>
-            </div>
-
-            {/* Card: Previsão do tempo */}
-            <div className={`flex flex-col p-3 rounded-lg border transition-all ${
-              screenModules.weather
-                ? "border-green-500/30 bg-green-500/10"
-                : "border-white/10 bg-white/5 opacity-60"
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`p-2 rounded-lg ${screenModules.weather ? "bg-green-500/20" : "bg-white/10"}`}>
-                    <Cloud className={`w-4 h-4 ${screenModules.weather ? "text-green-400" : "text-white/40"}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`font-medium text-sm ${screenModules.weather ? "text-white" : "text-white/50"}`}>
-                      Previsão do tempo
-                    </p>
-                    <p className="text-white/30 text-[10px]">Clima atual e previsão resumida</p>
-                  </div>
-                </div>
-                <Switch checked={screenModules.weather} onCheckedChange={() => handleToggleModule("weather")} />
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${
-                screenModules.weather ? "bg-green-500/20 text-green-300" : "bg-white/10 text-white/40"
-              }`}>
-                {screenModules.weather ? "Ativado" : "Desativado"}
-              </span>
-            </div>
-
-            {/* Card: Notícia do dia */}
-            <div className={`flex flex-col p-3 rounded-lg border transition-all ${
-              screenModules.headlineNews
-                ? "border-green-500/30 bg-green-500/10"
-                : "border-white/10 bg-white/5 opacity-60"
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`p-2 rounded-lg ${screenModules.headlineNews ? "bg-green-500/20" : "bg-white/10"}`}>
-                    <Newspaper className={`w-4 h-4 ${screenModules.headlineNews ? "text-green-400" : "text-white/40"}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`font-medium text-sm ${screenModules.headlineNews ? "text-white" : "text-white/50"}`}>
-                      Notícia do dia
-                    </p>
-                    <p className="text-white/30 text-[10px]">Destaque principal com imagem e título</p>
-                  </div>
-                </div>
-                <Switch checked={screenModules.headlineNews} onCheckedChange={() => handleToggleModule("headlineNews")} />
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${
-                screenModules.headlineNews ? "bg-green-500/20 text-green-300" : "bg-white/10 text-white/40"
-              }`}>
-                {screenModules.headlineNews ? "Ativado" : "Desativado"}
-              </span>
-            </div>
-
-            {/* Card: Ticker de notícias */}
-            <div className={`flex flex-col p-3 rounded-lg border transition-all ${
-              screenModules.newsTicker
-                ? "border-green-500/30 bg-green-500/10"
-                : "border-white/10 bg-white/5 opacity-60"
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`p-2 rounded-lg ${screenModules.newsTicker ? "bg-green-500/20" : "bg-white/10"}`}>
-                    <Rss className={`w-4 h-4 ${screenModules.newsTicker ? "text-green-400" : "text-white/40"}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`font-medium text-sm ${screenModules.newsTicker ? "text-white" : "text-white/50"}`}>
-                      Ticker de notícias
-                    </p>
-                    <p className="text-white/30 text-[10px]">Faixa com notícias em rolagem no rodapé</p>
-                  </div>
-                </div>
-                <Switch checked={screenModules.newsTicker} onCheckedChange={() => handleToggleModule("newsTicker")} />
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${
-                screenModules.newsTicker ? "bg-green-500/20 text-green-300" : "bg-white/10 text-white/40"
-              }`}>
-                {screenModules.newsTicker ? "Ativado" : "Desativado"}
-              </span>
-            </div>
+            <ModuleToggleCard
+              icon={MessageSquare}
+              title="Aviso do prédio"
+              description="Comunicados do condomínio"
+              enabled={screenModules.buildingNotice}
+              onToggle={() => handleToggleModule("buildingNotice")}
+            />
+            <ModuleToggleCard
+              icon={Cloud}
+              title="Previsão do tempo"
+              description="Clima atual e previsão resumida"
+              enabled={screenModules.weather}
+              onToggle={() => handleToggleModule("weather")}
+            />
+            <ModuleToggleCard
+              icon={Newspaper}
+              title="Notícia do dia"
+              description="Destaque principal com imagem e título"
+              enabled={screenModules.headlineNews}
+              onToggle={() => handleToggleModule("headlineNews")}
+            />
+            <ModuleToggleCard
+              icon={Rss}
+              title="Ticker de notícias"
+              description="Faixa com notícias em rolagem no rodapé"
+              enabled={screenModules.newsTicker}
+              onToggle={() => handleToggleModule("newsTicker")}
+            />
 
             {/* Card fixo: Identidade e Conexão */}
             <div className="flex flex-col p-3 rounded-lg border border-blue-500/30 bg-blue-500/10">
@@ -960,10 +883,10 @@ export function Admin() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Fontes de Notícias */}
-      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+      <GlassCard spacing="sm">
         <CardHeader className="flex-row flex-wrap items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
@@ -1064,10 +987,10 @@ export function Admin() {
             ))}
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Notícias do Condomínio */}
-      <Card className="glass-card border-white/10 mb-3 sm:mb-4">
+      <GlassCard spacing="sm">
         <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
           <CardTitle className="text-white flex items-center gap-2 text-sm">
             <Image className="w-4 h-4 flex-shrink-0" />
@@ -1091,26 +1014,22 @@ export function Admin() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="ni-titulo" className="text-white text-xs">Título</Label>
-                    <Input
-                      id="ni-titulo"
-                      value={niTitulo}
-                      onChange={(e) => setNiTitulo(e.target.value)}
-                      placeholder="Título da notícia"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="ni-subtitulo" className="text-white text-xs">Subtítulo</Label>
-                    <Input
-                      id="ni-subtitulo"
-                      value={niSubtitulo}
-                      onChange={(e) => setNiSubtitulo(e.target.value)}
-                      placeholder="Subtítulo (opcional)"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-8 text-sm"
-                    />
-                  </div>
+                  <FormField
+                    id="ni-titulo"
+                    label="Título"
+                    dark
+                    value={niTitulo}
+                    onValueChange={setNiTitulo}
+                    placeholder="Título da notícia"
+                  />
+                  <FormField
+                    id="ni-subtitulo"
+                    label="Subtítulo"
+                    dark
+                    value={niSubtitulo}
+                    onValueChange={setNiSubtitulo}
+                    placeholder="Subtítulo (opcional)"
+                  />
                   <div className="space-y-1">
                     <Label htmlFor="ni-arquivo" className="text-white text-xs">
                       {niIsAdding ? "Arquivo (imagem ou vídeo) *" : "Substituir arquivo (opcional)"}
@@ -1125,26 +1044,24 @@ export function Admin() {
                     <p className="text-white/30 text-[10px]">Máx 25 MB. Formatos: JPEG, PNG, GIF, WebP, MP4, WebM</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="ni-inicio" className="text-white text-xs">Início em</Label>
-                      <Input
-                        id="ni-inicio"
-                        type="datetime-local"
-                        value={niInicioEm}
-                        onChange={(e) => setNiInicioEm(e.target.value)}
-                        className="bg-white/10 border-white/20 text-white h-8 text-xs"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="ni-fim" className="text-white text-xs">Fim em</Label>
-                      <Input
-                        id="ni-fim"
-                        type="datetime-local"
-                        value={niFimEm}
-                        onChange={(e) => setNiFimEm(e.target.value)}
-                        className="bg-white/10 border-white/20 text-white h-8 text-xs"
-                      />
-                    </div>
+                    <FormField
+                      id="ni-inicio"
+                      label="Início em"
+                      dark
+                      type="datetime-local"
+                      value={niInicioEm}
+                      onValueChange={setNiInicioEm}
+                      className="text-xs"
+                    />
+                    <FormField
+                      id="ni-fim"
+                      label="Fim em"
+                      dark
+                      type="datetime-local"
+                      value={niFimEm}
+                      onValueChange={setNiFimEm}
+                      className="text-xs"
+                    />
                   </div>
                   {niEditingId !== null && (
                     <div className="flex items-center gap-2">
@@ -1272,7 +1189,7 @@ export function Admin() {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-white/30 text-[10px]">
-                        {new Date(ni.criadoEm).toLocaleDateString("pt-BR")}
+                        {formatDateShort(ni.criadoEm)}
                       </span>
                       <div className="flex gap-1">
                         <Button
@@ -1307,11 +1224,11 @@ export function Admin() {
             )
           )}
         </CardContent>
-      </Card>
+      </GlassCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Lista de mensagens */}
-        <Card className="glass-card border-white/10">
+        <GlassCard>
           <CardHeader className="flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-4 gap-2">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               <MessageSquare className="w-4 h-4" />
@@ -1406,10 +1323,10 @@ export function Admin() {
               </div>
             </ScrollArea>
           </CardContent>
-        </Card>
+        </GlassCard>
 
         {/* Formulário de edição */}
-        <Card className="glass-card border-white/10">
+        <GlassCard>
           <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
             <CardTitle className="text-white text-sm">
               {isAdding
@@ -1422,18 +1339,14 @@ export function Admin() {
           <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
             {isAdding || editingId ? (
               <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label htmlFor="title" className="text-white text-xs">
-                    Título
-                  </Label>
-                  <Input
-                    id="title"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="Digite o título do recado"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-8 text-sm"
-                  />
-                </div>
+                <FormField
+                  id="title"
+                  label="Título"
+                  dark
+                  value={formTitle}
+                  onValueChange={setFormTitle}
+                  placeholder="Digite o título do recado"
+                />
 
                 <div className="space-y-1">
                   <Label htmlFor="content" className="text-white text-xs">
@@ -1547,10 +1460,10 @@ export function Admin() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </GlassCard>
 
         {/* Pré-visualização */}
-        <Card className="glass-card border-white/10">
+        <GlassCard>
           <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
             <CardTitle className="text-white flex items-center gap-2 text-sm">
               <Eye className="w-4 h-4" />
@@ -1613,7 +1526,7 @@ export function Admin() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </GlassCard>
       </div>
     </div>
   );

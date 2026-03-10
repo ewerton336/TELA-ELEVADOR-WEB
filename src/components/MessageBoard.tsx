@@ -1,25 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Message } from "@/services/messageService";
 import { MessageSquare, AlertTriangle, Clock, Calendar } from "lucide-react";
+import { formatDate, formatTime } from "@/lib/dateFormatter";
 
 interface MessageBoardProps {
   messages: Message[];
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  });
-}
-
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export function MessageBoard({ messages }: MessageBoardProps) {

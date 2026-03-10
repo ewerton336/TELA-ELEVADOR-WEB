@@ -33,15 +33,7 @@ function formatUptime(seconds: number): string {
   return `${h}h ${m}m`;
 }
 
-function formatTimeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  if (diff < 0) return "agora";
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 10) return "agora";
-  if (seconds < 60) return `${seconds}s atrás`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m atrás`;
-  return `${Math.floor(seconds / 3600)}h atrás`;
-}
+import { formatTimeAgo } from "@/lib/dateFormatter";
 
 function isScreenAlive(screen: ScreenInfo): boolean {
   const diff = Date.now() - new Date(screen.lastHeartbeat).getTime();
