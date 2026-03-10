@@ -203,6 +203,19 @@
   @apply drop-shadow;
 }
 
+/* ── Weather card ── */
+.weather-card {
+  max-width: 320px;
+}
+
+.weather-card-header {
+  background: linear-gradient(135deg, rgba(37,99,235,0.20), rgba(6,182,212,0.12));
+}
+
+.weather-row {
+  transition: background-color 200ms ease;
+}
+
 /* Animação para notícias */
 .news-slide {
   @apply transition-all duration-500 ease-in-out;
@@ -314,4 +327,63 @@
 html.perf-mode .clock-badge {
   background: rgba(30,41,59,0.8);
   border-color: rgba(255,255,255,0.15);
+}
+
+html.perf-mode .weather-card-header {
+  background: rgba(30,41,59,0.6);
+}
+
+html.perf-mode .weather-icon {
+  filter: none;
+}
+
+html.perf-mode .weather-row {
+  transition: none;
+}
+
+/* ── MessageBoard — estilos de conteúdo HTML ── */
+.msg-content p {
+  margin-bottom: 0.6em;
+}
+.msg-content p:last-child {
+  margin-bottom: 0;
+}
+.msg-content ul,
+.msg-content ol {
+  padding-left: 1.2em;
+  margin-bottom: 0.5em;
+}
+.msg-content li {
+  margin-bottom: 0.25em;
+}
+
+/* Perf-mode: avisos usam cores sólidas e sem gradientes */
+html.perf-mode .msg-card {
+  background: rgba(30, 41, 59, 0.7);
+}
+html.perf-mode .msg-card--urgent {
+  background: rgba(69, 10, 10, 0.85);
+}
+html.perf-mode .msg-meta-block {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Notícia interna (notícia do dia) ── */
+.internal-news-title {
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+
+.internal-news-subtitle {
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Perf-mode: remove text-shadow e troca gradiente por cor sólida */
+html.perf-mode .internal-news-title,
+html.perf-mode .internal-news-subtitle {
+  text-shadow: none;
+}
+
+html.perf-mode .internal-news-overlay {
+  background: rgba(0,0,0,0.6);
 }
