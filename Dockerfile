@@ -13,8 +13,8 @@ RUN apk add --no-cache nginx
 # Copy built frontend
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Alpine nginx packages load vhost configs from /etc/nginx/http.d/*.conf
+COPY nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy server files + node_modules (for better-sqlite3)
 COPY --from=build /app/node_modules /app/node_modules

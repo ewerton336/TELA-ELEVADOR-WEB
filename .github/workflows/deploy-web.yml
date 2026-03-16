@@ -1,0 +1,117 @@
+name: Deploy WEB to VPS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+concurrency:
+  group: deploy-web-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy WEB
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deploy package
+        run: |
+          set +e
+          tar \
+            --exclude=node_modules \
+            --exclude=dist \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=.vscode \
+            --exclude=*.log \
+            --exclude=deploy.tar.gz \
+            -czf deploy.tar.gz .
+          TAR_EXIT=$?
+          set -e
+          if [ $TAR_EXIT -gt 1 ]; then
+            echo "tar failed with code $TAR_EXIT"
+            exit $TAR_EXIT
+          fi
+          echo "Package size: $(du -h deploy.tar.gz | cut -f1)"
+
+      - name: Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload package
+        run: |
+          scp deploy.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/tela-elevador-web-deploy.tar.gz
+
+      - name: Deploy on server
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+
+            DEPLOY_DIR="${{ secrets.VPS_DEPLOY_DIR_WEB }}"
+            if [ -z "$DEPLOY_DIR" ]; then DEPLOY_DIR="/opt/tela-elevador-web"; fi
+
+            CONTAINER_NAME="${{ secrets.WEB_CONTAINER_NAME }}"
+            if [ -z "$CONTAINER_NAME" ]; then CONTAINER_NAME="tela-elevador-web"; fi
+
+            IMAGE_NAME="${{ secrets.WEB_IMAGE_NAME }}"
+            if [ -z "$IMAGE_NAME" ]; then IMAGE_NAME="tela-elevador-web"; fi
+
+            HOST_PORT="${{ secrets.WEB_HOST_PORT }}"
+            if [ -z "$HOST_PORT" ]; then HOST_PORT="3080"; fi
+
+            echo "=== Extracting code ==="
+            mkdir -p "$DEPLOY_DIR"
+            tar -xzf /tmp/tela-elevador-web-deploy.tar.gz -C "$DEPLOY_DIR"
+            rm -f /tmp/tela-elevador-web-deploy.tar.gz
+
+            echo "=== Building image ==="
+            cd "$DEPLOY_DIR"
+            docker build -t "$IMAGE_NAME:latest" .
+
+            echo "=== Replacing container ==="
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --restart unless-stopped \
+              -p "$HOST_PORT:80" \
+              -v tela_elevador_web_data:/app/data \
+              "$IMAGE_NAME:latest"
+
+            echo "=== Waiting startup ==="
+            sleep 8
+
+            echo "=== Health check (localhost) ==="
+            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$HOST_PORT" || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "WEB responding with HTTP $HTTP_STATUS"
+            else
+              echo "WEB health check failed with HTTP $HTTP_STATUS"
+              docker logs --tail 120 "$CONTAINER_NAME" || true
+              exit 1
+            fi
+          DEPLOY_SCRIPT
+
+      - name: Optional public domain check
+        run: |
+          if [ -n "${{ secrets.WEB_PUBLIC_URL }}" ]; then
+            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${{ secrets.WEB_PUBLIC_URL }}" || echo "000")
+            echo "Public URL status: $HTTP_STATUS"
+          else
+            echo "WEB_PUBLIC_URL not configured, skipping public check"
+          fi

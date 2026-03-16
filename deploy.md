@@ -128,3 +128,86 @@ docker rm tela-elevador
 
 docker run -d --name tela-elevador --restart unless-stopped -p 3080:80 tela-elevador:<TAG_ANTERIOR>
 ```
+
+## Deploy automatico (GitHub Actions)
+
+Arquivo de pipeline:
+
+- `.github/workflows/deploy-web.yml`
+
+Trigger configurado:
+
+- `push` na branch `master`
+- `pull_request` fechado com merge em `master`
+
+Estratégia:
+
+- Empacota o projeto em `tar.gz`
+- Envia via SCP para a VPS
+- Builda imagem Docker no servidor
+- Troca container e executa health check local
+
+### Secrets necessarios no repositório
+
+Configure em `Settings > Secrets and variables > Actions`:
+
+- `VPS_SSH_KEY`: chave privada SSH para deploy
+- `VPS_HOST`: host da VPS (ex: `130.250.189.175`)
+- `VPS_USER`: usuario SSH (ex: `root`)
+- `VPS_DEPLOY_DIR_WEB`: diretorio de deploy na VPS (ex: `/opt/tela-elevador-web`)
+- `WEB_HOST_PORT`: porta publica local da app na VPS (ex: `3080`)
+- `WEB_CONTAINER_NAME`: nome do container (ex: `tela-elevador-web`)
+- `WEB_IMAGE_NAME`: nome da imagem (ex: `tela-elevador-web`)
+- `WEB_PUBLIC_URL` (opcional): URL publica para checagem final (ex: `https://elevador.ewertondev.com.br`)
+
+### Novo dominio no Nginx host
+
+Antes de ativar `WEB_PUBLIC_URL`, configure o vhost no servidor:
+
+```nginx
+server {
+    listen 80;
+    server_name elevador.ewertondev.com.br www.elevador.ewertondev.com.br;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name elevador.ewertondev.com.br www.elevador.ewertondev.com.br;
+
+    ssl_certificate /etc/letsencrypt/live/elevador.ewertondev.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/elevador.ewertondev.com.br/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Depois valide e recarregue:
+
+```bash
+nginx -t
+systemctl reload nginx
+```
+
+Opcionalmente, use o script utilitario do projeto para criar vhost HTTP e emitir cert:
+
+```bash
+cd /opt/tela-elevador-web
+bash ops/provision-nginx-elevador.sh
+```
+
+Variaveis opcionais:
+
+- `DOMAIN` (default `elevador.ewertondev.com.br`)
+- `APP_PORT` (default `3080`)
+- `CERTBOT_EMAIL` (necessario para emissao automatica do certificado)
