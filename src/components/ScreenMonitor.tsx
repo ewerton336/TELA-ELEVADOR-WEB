@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requestAdminJson } from "@/services/apiClient";
+import { getPredioHubUrl } from "@/lib/backendUrl";
 
 interface ScreenInfo {
   connectionId: string;
@@ -81,7 +82,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
 
   useEffect(() => {
     const connection = new HubConnectionBuilder()
-      .withUrl("/hub/predio")
+      .withUrl(getPredioHubUrl())
       .withAutomaticReconnect([0, 2000, 5000, 10_000])
       .configureLogging(LogLevel.Warning)
       .build();

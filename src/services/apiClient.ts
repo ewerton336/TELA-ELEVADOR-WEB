@@ -1,3 +1,5 @@
+import { buildBackendUrl } from "@/lib/backendUrl";
+
 type ApiErrorDetails = {
   status: number;
   statusText: string;
@@ -7,7 +9,7 @@ type ApiErrorDetails = {
 };
 
 function buildBaseUrl(slug: string): string {
-  return `/api/${encodeURIComponent(slug)}`;
+  return buildBackendUrl(`/api/${encodeURIComponent(slug)}`);
 }
 
 export async function requestJson<T>(
@@ -54,7 +56,7 @@ export async function requestAdminJson<T>(
   init: RequestInit,
   label: string,
 ): Promise<T> {
-  const url = `/api/admin${path}`;
+  const url = buildBackendUrl(`/api/admin${path}`);
   const res = await fetch(url, init);
   const text = await res.text();
 

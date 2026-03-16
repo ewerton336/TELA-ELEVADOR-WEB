@@ -8,6 +8,8 @@ import {
 import { getMessages, Message } from "@/services/messageService";
 import { getPredio, OrientationMode, ScreenModules } from "@/services/predioService";
 import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaService";
+import { getPredioHubUrl } from "@/lib/backendUrl";
+import { getScreenDeviceId } from "@/lib/screenDeviceId";
 
 interface UseSignalROptions {
   slug: string;
@@ -121,7 +123,7 @@ export function useSignalR({
 
   // Tentativa manual infinita de reconexão (para WiFi intermitente do elevador)
   const startManualRetry = useCallback(
-    (connection: HubConnection) => {
+    (connection: HubConnection, deviceId: string) => {
       if (retryTimerRef.current) return;
 
       const attempt = async () => {
@@ -135,7 +137,7 @@ export function useSignalR({
 
         try {
           await connection.start();
-          await connection.invoke("JoinPredio", slug, __APP_VERSION__);
+          await connection.invoke("JoinPredio", slug, __APP_VERSION__, deviceId);
           setIsConnected(true);
           stopFallbackPolling();
           await syncAfterReconnect();
@@ -153,8 +155,10 @@ export function useSignalR({
   );
 
   useEffect(() => {
+    const deviceId = getScreenDeviceId();
+
     const connection = new HubConnectionBuilder()
-      .withUrl("/hub/predio")
+      .withUrl(getPredioHubUrl())
       .withAutomaticReconnect([0, 1000, 2000, 5000, 10_000, 30_000])
       .configureLogging(LogLevel.Warning)
       .build();
@@ -209,7 +213,7 @@ export function useSignalR({
         clearTimeout(retryTimerRef.current);
         retryTimerRef.current = null;
       }
-      await connection.invoke("JoinPredio", slug, __APP_VERSION__);
+      await connection.invoke("JoinPredio", slug, __APP_VERSION__, deviceId);
       await syncAfterReconnect();
     });
 
@@ -218,14 +222,14 @@ export function useSignalR({
       setIsConnected(false);
       startFallbackPolling();
       // Inicia loop de reconexão infinita (WiFi do elevador)
-      startManualRetry(connection);
+      startManualRetry(connection, deviceId);
     });
 
     // --- Iniciar conexão ---
     const start = async () => {
       try {
         await connection.start();
-        await connection.invoke("JoinPredio", slug, __APP_VERSION__);
+        await connection.invoke("JoinPredio", slug, __APP_VERSION__, deviceId);
         connectionRef.current = connection;
         setIsConnected(true);
         startTimeRef.current = Date.now();
@@ -234,7 +238,7 @@ export function useSignalR({
         console.error("[SignalR] Erro ao conectar:", err);
         setIsConnected(false);
         startFallbackPolling();
-        startManualRetry(connection);
+        startManualRetry(connection, deviceId);
       }
     };
 
