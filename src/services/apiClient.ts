@@ -23,11 +23,13 @@ export async function requestJson<T>(
   const text = await res.text();
 
   let parsed: unknown = null;
+  let parseFailed = false;
   if (text) {
     try {
       parsed = JSON.parse(text);
     } catch {
       parsed = text;
+      parseFailed = true;
     }
   }
 
@@ -44,6 +46,19 @@ export async function requestJson<T>(
     };
     const error = new Error(`HTTP ${res.status}`);
     console.error(`[apiClient] ${label} failed:`, details);
+    (error as Error & { details?: ApiErrorDetails }).details = details;
+    throw error;
+  }
+
+  if (parseFailed) {
+    const details: ApiErrorDetails = {
+      status: res.status,
+      statusText: res.statusText,
+      url: res.url,
+      body: text.slice(0, 500),
+    };
+    const error = new Error("Invalid JSON response");
+    console.error(`[apiClient] ${label} invalid json:`, details);
     (error as Error & { details?: ApiErrorDetails }).details = details;
     throw error;
   }

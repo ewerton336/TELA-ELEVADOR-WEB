@@ -10,8 +10,9 @@ const SEPARATOR = " \u2022 ";
 
 function NewsTickerInner({ items, visible }: NewsTickerProps) {
   const tickerText = useMemo(() => {
-    if (!items || items.length === 0) return "";
-    return items.map((n) => n.title).join(SEPARATOR);
+    const safeItems = Array.isArray(items) ? items : [];
+    if (safeItems.length === 0) return "";
+    return safeItems.map((n) => n.title).join(SEPARATOR);
   }, [items]);
 
   if (!visible || !tickerText) return null;

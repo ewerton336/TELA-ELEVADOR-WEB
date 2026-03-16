@@ -182,7 +182,8 @@ export function Dashboard() {
       console.error("Erro ao carregar notícias:", newsError);
     }
     if (newsData) {
-      console.log("Notícias carregadas:", newsData.items?.length, "itens");
+      const total = Array.isArray(newsData.items) ? newsData.items.length : 0;
+      console.log("Notícias carregadas:", total, "itens");
     }
   }, [newsData, newsError]);
 

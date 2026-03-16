@@ -42,15 +42,22 @@ function interleaveWithInternal(
   return result;
 }
 
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
 export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: NewsCarouselProps) {
   const [current, setCurrent] = useState(0);
   const slideDurationMs = 10000;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoEndedRef = useRef(false);
 
+  const externalItems = useMemo(() => asArray<NewsItem>(data?.items), [data?.items]);
+  const internalItems = useMemo(() => asArray<NoticiaInterna>(noticiasInternas), [noticiasInternas]);
+
   const slides = useMemo(
-    () => interleaveWithInternal(data?.items ?? [], noticiasInternas),
-    [data?.items, noticiasInternas],
+    () => interleaveWithInternal(externalItems, internalItems),
+    [externalItems, internalItems],
   );
 
   const advanceSlide = useCallback(() => {

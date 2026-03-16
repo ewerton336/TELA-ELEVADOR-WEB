@@ -47,9 +47,10 @@ function trimToNextPunctuation(text: string, minLength: number): string {
 }
 
 function normalizeNewsData(data: NewsData): NewsData {
+  const safeItems = Array.isArray(data?.items) ? data.items : [];
   return {
     ...data,
-    items: data.items.map((item) => ({
+    items: safeItems.map((item) => ({
       ...item,
       description: stripHtml(trimToNextPunctuation(item.description ?? "", 200)),
     })),
