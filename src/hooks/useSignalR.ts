@@ -10,6 +10,7 @@ import { getPredio, OrientationMode, ScreenModules } from "@/services/predioServ
 import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaService";
 import { getPredioHubUrl } from "@/lib/backendUrl";
 import { getScreenDeviceId } from "@/lib/screenDeviceId";
+import { setCache } from "@/lib/cache";
 
 interface UseSignalROptions {
   slug: string;
@@ -168,6 +169,8 @@ export function useSignalR({
       if (Array.isArray(avisos)) {
         const mapped = mapAvisosToMessages(avisos);
         console.log("[SignalR] Avisos recebidos:", mapped.length);
+        // Atualiza cache para que fallback polling use dados recentes
+        setCache(`messages:${slug}`, mapped, 24 * 60);
         onAvisosRef.current(mapped);
       }
     });
