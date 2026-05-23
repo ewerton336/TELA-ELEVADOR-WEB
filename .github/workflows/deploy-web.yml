@@ -1,117 +1,113 @@
-name: Deploy WEB to VPS
+name: Deploy Web to VPS
 
 on:
   push:
     branches: [master]
+
   pull_request:
     branches: [master]
     types: [closed]
 
-concurrency:
-  group: deploy-web-production
-  cancel-in-progress: false
-
 jobs:
   deploy:
-    name: Deploy WEB
+    name: Build & Deploy Frontend
     runs-on: ubuntu-latest
+
     if: >
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/ewerton336/tela-elevador-web
+
     steps:
-      - name: Checkout code
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Create deploy package
-        run: |
-          set +e
-          tar \
-            --exclude=node_modules \
-            --exclude=dist \
-            --exclude=.git \
-            --exclude=.github \
-            --exclude=.vscode \
-            --exclude=*.log \
-            --exclude=deploy.tar.gz \
-            -czf deploy.tar.gz .
-          TAR_EXIT=$?
-          set -e
-          if [ $TAR_EXIT -gt 1 ]; then
-            echo "tar failed with code $TAR_EXIT"
-            exit $TAR_EXIT
-          fi
-          echo "Package size: $(du -h deploy.tar.gz | cut -f1)"
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Configure SSH
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push da imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Configurar SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Add server to known_hosts
+      - name: Adicionar VPS ao known_hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Upload package
+      - name: Enviar docker-compose.yml para a VPS
         run: |
-          scp deploy.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/tela-elevador-web-deploy.tar.gz
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p ${{ secrets.VPS_DEPLOY_DIR_WEB }}"
+          scp docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_DIR_WEB }}/docker-compose.yml
 
-      - name: Deploy on server
+      - name: Deploy no servidor
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
             set -e
+            cd "${{ secrets.VPS_DEPLOY_DIR_WEB }}"
 
-            DEPLOY_DIR="${{ secrets.VPS_DEPLOY_DIR_WEB }}"
-            if [ -z "$DEPLOY_DIR" ]; then DEPLOY_DIR="/opt/tela-elevador-web"; fi
+            echo "=== Autenticando no ghcr.io ==="
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-            CONTAINER_NAME="${{ secrets.WEB_CONTAINER_NAME }}"
-            if [ -z "$CONTAINER_NAME" ]; then CONTAINER_NAME="tela-elevador-web"; fi
+            echo "=== Baixando imagem mais recente ==="
+            docker compose pull
 
-            IMAGE_NAME="${{ secrets.WEB_IMAGE_NAME }}"
-            if [ -z "$IMAGE_NAME" ]; then IMAGE_NAME="tela-elevador-web"; fi
+            echo "=== Subindo container ==="
+            docker compose up -d
 
-            HOST_PORT="${{ secrets.WEB_HOST_PORT }}"
-            if [ -z "$HOST_PORT" ]; then HOST_PORT="3080"; fi
+            docker logout ghcr.io || true
 
-            echo "=== Extracting code ==="
-            mkdir -p "$DEPLOY_DIR"
-            tar -xzf /tmp/tela-elevador-web-deploy.tar.gz -C "$DEPLOY_DIR"
-            rm -f /tmp/tela-elevador-web-deploy.tar.gz
+            echo "=== Aguardando inicialização (10s) ==="
+            sleep 10
 
-            echo "=== Building image ==="
-            cd "$DEPLOY_DIR"
-            docker build -t "$IMAGE_NAME:latest" .
+            echo "=== Containers ==="
+            docker ps --filter name=tela-elevador-web
 
-            echo "=== Replacing container ==="
-            docker stop "$CONTAINER_NAME" || true
-            docker rm "$CONTAINER_NAME" || true
-            docker run -d \
-              --name "$CONTAINER_NAME" \
-              --restart unless-stopped \
-              -p "$HOST_PORT:80" \
-              -v tela_elevador_web_data:/app/data \
-              "$IMAGE_NAME:latest"
-
-            echo "=== Waiting startup ==="
-            sleep 8
-
-            echo "=== Health check (localhost) ==="
-            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$HOST_PORT" || echo "000")
+            echo "=== Health check (porta 3080) ==="
+            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3080 || echo "000")
             if [ "$HTTP_STATUS" = "200" ]; then
-              echo "WEB responding with HTTP $HTTP_STATUS"
+              echo "Web respondendo com HTTP $HTTP_STATUS"
             else
-              echo "WEB health check failed with HTTP $HTTP_STATUS"
-              docker logs --tail 120 "$CONTAINER_NAME" || true
+              echo "Web respondeu com HTTP $HTTP_STATUS"
+              docker compose logs --tail=80 web
               exit 1
             fi
+
+            echo "=== Limpando imagens antigas ==="
+            docker image prune -f || true
+
+            echo "=== Deploy concluído ==="
           DEPLOY_SCRIPT
 
-      - name: Optional public domain check
+      - name: Verificar domínio público
         run: |
-          if [ -n "${{ secrets.WEB_PUBLIC_URL }}" ]; then
-            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${{ secrets.WEB_PUBLIC_URL }}" || echo "000")
-            echo "Public URL status: $HTTP_STATUS"
-          else
-            echo "WEB_PUBLIC_URL not configured, skipping public check"
+          echo "Testando https://elevador.ewertondev.com.br ..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' https://elevador.ewertondev.com.br || echo "000")
+          echo "Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Domínio público retornou $HTTP_STATUS (verifique propagação/Nginx)"
           fi

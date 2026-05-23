@@ -1,0 +1,12 @@
+services:
+  web:
+    image: ghcr.io/ewerton336/tela-elevador-web:latest
+    container_name: tela-elevador-web
+    ports:
+      - "3080:80"
+    volumes:
+      - web_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  web_data:
