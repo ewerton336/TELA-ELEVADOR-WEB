@@ -37,7 +37,7 @@ export function Dashboard() {
   }, [slug, navigate]);
 
   // SignalR — avisos e orientação em tempo real (substitui polling)
-  const { isConnected: isSignalRConnected } = useSignalR({
+  useSignalR({
     slug: slug ?? "gramado",
     onAvisosReceived: (msgs) => setMessages(msgs),
     onOrientationReceived: (mode) => {
@@ -193,7 +193,7 @@ export function Dashboard() {
   const showNewsTicker = modules.newsTicker;
 
   return (
-    <div className="elevator-screen h-screen w-screen overflow-hidden">
+    <div className="elevator-screen h-screen w-screen overflow-hidden" style={{ height: "100dvh" }}>
       <div className="elevator-rotate">
         <div className={`relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame ${showNewsTicker ? "has-ticker" : ""}`}>
           <div className="absolute inset-0 bg-slate-950/60 dashboard-ambient" />
@@ -214,21 +214,16 @@ export function Dashboard() {
             <header className="flex items-center justify-between gap-4 px-3 py-3 dashboard-header">
               <DigitalClock predio={predio} />
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 dashboard-header-right">
                 {showWeather && (
-                  <div className="max-w-sm">
-                    <WeatherCard
-                      data={weatherData ?? null}
-                      isLoading={weatherLoading}
-                      compact
-                    />
-                  </div>
+                  <WeatherCard
+                    data={weatherData ?? null}
+                    isLoading={weatherLoading}
+                    compact
+                  />
                 )}
 
-                <ConnectionStatus
-                  isSyncing={isSyncing}
-                  isSignalRConnected={isSignalRConnected}
-                />
+                <ConnectionStatus isSyncing={isSyncing} />
               </div>
             </header>
 
@@ -243,9 +238,15 @@ export function Dashboard() {
           {/* Ticker de notícias no rodapé */}
           <NewsTicker items={newsData?.items ?? []} visible={showNewsTicker} />
 
-          {/* Créditos do desenvolvedor */}
-          <div className={`absolute ${showNewsTicker ? "bottom-10" : "bottom-2"} right-4 z-20`}>
-            <p className="text-white/100 text-[14px]">
+          <div
+            className="absolute right-4 z-20 pointer-events-none"
+            style={{
+              bottom: showNewsTicker
+                ? "calc(var(--ticker-h) + 8px)"
+                : "8px",
+            }}
+          >
+            <p className="text-fs-tiny text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
               Desenvolvido por Ewerton Guimarães • (13) 99782-7870
             </p>
           </div>

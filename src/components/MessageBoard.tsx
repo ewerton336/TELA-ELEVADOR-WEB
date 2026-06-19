@@ -101,10 +101,10 @@ export function MessageBoard({ messages }: MessageBoardProps) {
 
   if (!currentMessage) {
     return (
-      <div className="h-full flex items-center justify-center text-white/60">
+      <div className="h-full flex items-center justify-center text-white/70">
         <div className="text-center">
-          <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>Nenhum aviso no momento</p>
+          <MessageSquare className="w-20 h-20 mx-auto mb-4 opacity-60" />
+          <p className="text-fs-subtitle text-white/75">Nenhum aviso no momento</p>
         </div>
       </div>
     );
@@ -143,8 +143,8 @@ export function MessageBoard({ messages }: MessageBoardProps) {
   );
 }
 
-/* ── Bloco de metadados (data/hora) ── */
-function MetaBlock({
+/* ── Data/hora de publicação (inline no cabeçalho) ── */
+function HeaderDateTime({
   createdAt,
   variant,
 }: {
@@ -152,23 +152,19 @@ function MetaBlock({
   variant: "normal" | "urgent";
 }) {
   const colorClass =
-    variant === "urgent"
-      ? "text-red-200/70 bg-red-500/10 border-red-400/15"
-      : "text-white/55 bg-white/5 border-white/10";
+    variant === "urgent" ? "text-red-100/90" : "text-white/75";
 
   return (
-    <div
-      className={`msg-meta-block flex items-center gap-3 px-4 py-2.5 mx-6 rounded-lg border ${colorClass} flex-shrink-0`}
-    >
-      <div className="flex items-center gap-1.5">
-        <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="text-xs font-medium">{formatDate(createdAt)}</span>
-      </div>
-      <div className="w-px h-3 bg-current opacity-25" />
-      <div className="flex items-center gap-1.5">
-        <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="text-xs font-medium">{formatTime(createdAt)}</span>
-      </div>
+    <div className={`flex items-center gap-1.5 ${colorClass} flex-shrink-0`}>
+      <Calendar className="w-4 h-4 flex-shrink-0" />
+      <span className="msg-meta-text whitespace-nowrap">
+        {formatDate(createdAt)}
+      </span>
+      <span className="opacity-40 px-0.5">·</span>
+      <Clock className="w-4 h-4 flex-shrink-0" />
+      <span className="msg-meta-text whitespace-nowrap">
+        {formatTime(createdAt)}
+      </span>
     </div>
   );
 }
@@ -185,44 +181,39 @@ function NormalCard({
 }) {
   return (
     <div className="msg-card h-full flex flex-col rounded-2xl border border-white/10 bg-slate-800/40 overflow-hidden">
-      {/* Bloco 1 — Tipo + contador */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-            <MessageSquare className="w-4 h-4 text-orange-400" />
+      {/* Bloco 1 — Tipo + data/hora + contador */}
+      <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-lg bg-orange-500/25 flex items-center justify-center flex-shrink-0">
+            <MessageSquare className="w-6 h-6 text-orange-300" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-orange-300">
+          <span className="text-fs-meta font-bold uppercase tracking-widest text-orange-300 truncate">
             Aviso do síndico
           </span>
         </div>
-        {total > 1 && (
-          <span className="text-xs text-white/40 tabular-nums">
-            {index + 1}/{total}
-          </span>
-        )}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {message.createdAt && (
+            <HeaderDateTime createdAt={message.createdAt} variant="normal" />
+          )}
+          {total > 1 && (
+            <span className="text-fs-meta text-white/70 tabular-nums font-medium">
+              {index + 1}/{total}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Separador */}
-      <div className="mx-6 h-px bg-white/8 flex-shrink-0" />
+      <div className="mx-6 h-px bg-white/10 flex-shrink-0" />
 
-      {/* Bloco 2 — Título */}
       {message.title && (
-        <h2 className="text-[1.4rem] font-bold leading-tight text-white px-6 pt-4 pb-1 flex-shrink-0">
+        <h2 className="msg-title px-6 pt-5 pb-3 flex-shrink-0">
           {message.title}
         </h2>
       )}
 
-      {/* Bloco 3 — Data e hora */}
-      {message.createdAt && (
-        <div className="pt-2 pb-3 flex-shrink-0">
-          <MetaBlock createdAt={message.createdAt} variant="normal" />
-        </div>
-      )}
-
-      {/* Bloco 4 — Conteúdo */}
       <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
         <div
-          className="msg-content text-white/75 text-base sm:text-lg leading-relaxed"
+          className="msg-content msg-body"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
       </div>
@@ -241,45 +232,39 @@ function UrgentCard({
   total?: number;
 }) {
   return (
-    <div className="msg-card msg-card--urgent h-full flex flex-col rounded-2xl border-2 border-red-500/50 bg-red-950/80 overflow-hidden">
-      {/* Bloco 1 — Badge urgente + contador */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-red-500/25 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-4 h-4 text-red-300" />
+    <div className="msg-card msg-card--urgent h-full flex flex-col rounded-2xl border-2 border-red-500 bg-red-950/85 overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-lg bg-red-500/30 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-6 h-6 text-red-200" />
           </div>
-          <span className="text-[11px] font-extrabold uppercase tracking-widest text-red-300">
+          <span className="text-fs-meta font-extrabold uppercase tracking-widest text-red-200 truncate">
             Urgente
           </span>
         </div>
-        {total > 1 && (
-          <span className="text-xs text-white/40 tabular-nums">
-            {index + 1}/{total}
-          </span>
-        )}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {message.createdAt && (
+            <HeaderDateTime createdAt={message.createdAt} variant="urgent" />
+          )}
+          {total > 1 && (
+            <span className="text-fs-meta text-red-100/80 tabular-nums font-medium">
+              {index + 1}/{total}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Separador */}
-      <div className="mx-6 h-px bg-red-400/15 flex-shrink-0" />
+      <div className="mx-6 h-px bg-red-400/25 flex-shrink-0" />
 
-      {/* Bloco 2 — Título */}
       {message.title && (
-        <h2 className="text-[1.4rem] font-bold leading-tight text-white px-6 pt-4 pb-1 flex-shrink-0">
+        <h2 className="msg-title px-6 pt-5 pb-3 flex-shrink-0">
           {message.title}
         </h2>
       )}
 
-      {/* Bloco 3 — Data e hora */}
-      {message.createdAt && (
-        <div className="pt-2 pb-3 flex-shrink-0">
-          <MetaBlock createdAt={message.createdAt} variant="urgent" />
-        </div>
-      )}
-
-      {/* Bloco 4 — Conteúdo */}
       <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
         <div
-          className="msg-content text-white/85 text-base sm:text-lg leading-relaxed"
+          className="msg-content msg-body text-white"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
       </div>

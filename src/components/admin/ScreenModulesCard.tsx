@@ -10,7 +10,6 @@ import {
   Newspaper,
   Rss,
   Lock,
-  Eye,
 } from "lucide-react";
 import { ModuleToggleCard } from "@/components/ModuleToggleCard";
 import * as predioAdminService from "@/services/predioAdminService";
@@ -87,9 +86,9 @@ export function ScreenModulesCard({ slug, token }: ScreenModulesCardProps) {
           onClick={handleResetModules}
           size="sm"
           variant="outline"
-          className="h-7 text-xs bg-transparent border-white/20 text-white hover:bg-white/10"
+          className="h-11 sm:h-8 text-xs sm:text-xs px-3 bg-transparent border-white/20 text-white hover:bg-white/10"
         >
-          <RotateCcw className="w-3 h-3 mr-1" />
+          <RotateCcw className="w-4 h-4 sm:w-3 sm:h-3 mr-1.5" />
           Restaurar padrão
         </Button>
       </CardHeader>
@@ -151,113 +150,7 @@ export function ScreenModulesCard({ slug, token }: ScreenModulesCardProps) {
             </span>
           </div>
         </div>
-
-        {/* Pré-visualização da tela */}
-        <ScreenPreview screenModules={screenModules} />
       </CardContent>
     </GlassCard>
-  );
-}
-
-/** Mini preview of the elevator screen layout based on active modules */
-function ScreenPreview({ screenModules }: { screenModules: ScreenModules }) {
-  return (
-    <div className="border-t border-white/10 pt-4">
-      <h3 className="text-white text-sm font-semibold mb-3 flex items-center gap-2">
-        <Eye className="w-4 h-4" />
-        Pré-visualização da tela
-      </h3>
-      <div className="flex justify-center">
-        <div
-          className="relative rounded-lg border border-white/20 bg-slate-950 overflow-hidden"
-          style={{ width: "270px", height: "480px" }}
-        >
-          {/* Header fixo */}
-          <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              <span className="text-[8px] text-white/70 font-medium">
-                Edifício Exemplo
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[8px] text-white/50">12:00</span>
-              {screenModules.weather && (
-                <span className="text-[8px] text-yellow-300">☀️ 24°</span>
-              )}
-            </div>
-          </div>
-
-          {/* Corpo */}
-          <div
-            className={`flex-1 ${screenModules.buildingNotice && screenModules.headlineNews ? "grid grid-cols-[38%_1fr]" : ""} gap-1 p-1.5`}
-            style={{
-              height: `calc(100% - ${32 + (screenModules.newsTicker ? 24 : 0)}px)`,
-            }}
-          >
-            {/* Avisos */}
-            {screenModules.buildingNotice && (
-              <div className="rounded bg-purple-900/60 border border-white/10 p-1.5 flex flex-col gap-1 overflow-hidden">
-                <span className="text-[7px] text-white/60 font-semibold">
-                  AVISOS
-                </span>
-                <div className="rounded bg-white/5 p-1 flex-1">
-                  <div className="w-full h-1.5 bg-white/20 rounded mb-1" />
-                  <div className="w-3/4 h-1 bg-white/10 rounded mb-0.5" />
-                  <div className="w-full h-1 bg-white/10 rounded mb-0.5" />
-                  <div className="w-2/3 h-1 bg-white/10 rounded" />
-                </div>
-              </div>
-            )}
-
-            {/* Notícias */}
-            {screenModules.headlineNews && (
-              <div className="rounded bg-black/40 border border-white/10 p-1.5 flex flex-col gap-1 overflow-hidden">
-                <span className="text-[7px] text-white/60 font-semibold">
-                  NOTÍCIAS
-                </span>
-                <div className="rounded bg-gradient-to-b from-white/10 to-transparent flex-1 flex items-center justify-center">
-                  <Newspaper className="w-5 h-5 text-white/20" />
-                </div>
-                <div className="w-full h-1.5 bg-white/15 rounded" />
-                <div className="w-2/3 h-1 bg-white/10 rounded" />
-              </div>
-            )}
-
-            {/* Quando nenhum módulo variável está ativo */}
-            {!screenModules.buildingNotice && !screenModules.headlineNews && (
-              <div className="flex items-center justify-center h-full text-white/20">
-                <div className="text-center">
-                  <MonitorSmartphone className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                  <p className="text-[8px]">Sem módulos ativos</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Ticker rodapé */}
-          {screenModules.newsTicker && (
-            <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-900 border-t border-white/10 flex items-center px-2 overflow-hidden">
-              <span className="text-[7px] text-yellow-400 font-medium mr-2 flex-shrink-0">
-                LAST NEWS
-              </span>
-              <div className="flex gap-3 animate-pulse">
-                <span className="text-[7px] text-white/50">
-                  Notícia em destaque passa aqui...
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Status de conexão fixo */}
-          <div className="absolute top-2 right-2">
-            <div className="flex items-center gap-1 bg-black/60 rounded-full px-1.5 py-0.5">
-              <div className="w-1 h-1 rounded-full bg-green-400" />
-              <span className="text-[6px] text-green-300">Online</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }

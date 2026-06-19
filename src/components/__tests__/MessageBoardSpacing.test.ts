@@ -27,12 +27,14 @@ describe("MessageBoard — consistência de espaçamento", () => {
     expect(matches!.length).toBe(2); // NormalCard + UrgentCard
   });
 
-  it("MetaBlock usa mx-6 com padding aumentado py-2.5", () => {
-    expect(src).toContain("py-2.5 mx-6");
+  it("data/hora de publicação fica inline no cabeçalho (HeaderDateTime) em ambos os cards", () => {
+    const matches = src.match(/<HeaderDateTime createdAt=/g);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBe(2); // NormalCard + UrgentCard
   });
 
   it("títulos usam px-6 em ambos os cards", () => {
-    const matches = src.match(/leading-tight text-white px-6 pt-4/g);
+    const matches = src.match(/msg-title px-6 pt-5 pb-3/g);
     expect(matches).not.toBeNull();
     expect(matches!.length).toBe(2);
   });

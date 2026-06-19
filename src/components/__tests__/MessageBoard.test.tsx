@@ -57,9 +57,9 @@ describe("MessageBoard — data/hora", () => {
     expect(screen.getByText(/:\d{2}/)).toBeInTheDocument();
   });
 
-  it("deve agrupar data e hora no bloco de metadados", () => {
+  it("deve agrupar data e hora no cabeçalho", () => {
     render(<MessageBoard messages={[makeMessage()]} />);
-    // O MetaBlock renderiza data e hora dentro do mesmo contêiner
+    // HeaderDateTime renderiza data e hora juntas no cabeçalho do card
     const dateEl = screen.getByText(/mar/i);
     const timeEl = screen.getByText(/:\d{2}/);
     // Ambos devem existir no DOM

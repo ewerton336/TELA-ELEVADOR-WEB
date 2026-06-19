@@ -71,17 +71,63 @@
   }
 }
 
-/* Estilos específicos para tela de elevador */
+/* =========================================================
+   ELEVATOR SCREEN — design tokens
+   Monitor 24" Full HD montado fisicamente em portrait,
+   navegador Android roda em landscape → CSS rotaciona via
+   .force-portrait. Os componentes consomem var(--fs-*) e
+   var(--dash-*) e essas variáveis mudam por orientação.
+   ========================================================= */
 .elevator-screen {
   @apply h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
   position: relative;
 
-  /* ── Design tokens do dashboard ── */
+  /* ── Tipografia (landscape default) ── */
+  --fs-display: 96px;   /* hora */
+  --fs-title: 48px;     /* título de notícia / aviso */
+  --fs-subtitle: 28px;  /* descrição de notícia */
+  --fs-body: 22px;      /* conteúdo de aviso */
+  --fs-meta: 16px;      /* data, contador, badge */
+  --fs-tiny: 12px;      /* créditos, micro-info */
+
+  /* ── Layout ── */
+  --dash-gap: 1.5rem;
+  --dash-pad: 1.5rem;
+  --dash-sidebar-w: 440px;
+  --dash-header-min: 120px;
+  --ticker-h: 56px;
+  --news-scrim-h: 50%;
+}
+
+/* ── Overrides para portrait (após rotação CSS) ── */
+.force-portrait .elevator-screen {
+  --fs-display: 96px;
+  --fs-title: 44px;
+  --fs-subtitle: 26px;
+  --fs-body: 24px;
+  --fs-meta: 16px;
+  --fs-tiny: 13px;
+
   --dash-gap: 1.25rem;
-  --dash-pad: 1.25rem;
-  --dash-sidebar-w: 340px;
-  --dash-header-min: 80px;
-  --ticker-h: 40px;
+  --dash-pad: 1.5rem;
+  --dash-header-min: 140px;
+  --ticker-h: 64px;
+  --news-scrim-h: 60%;
+}
+
+/* Fallback se o monitor já entrega portrait nativo (sem rotação CSS) */
+@media (orientation: portrait) {
+  .elevator-screen:not(.force-landscape *) {
+    --fs-display: 96px;
+    --fs-title: 44px;
+    --fs-subtitle: 26px;
+    --fs-body: 24px;
+    --fs-meta: 16px;
+    --fs-tiny: 13px;
+    --dash-header-min: 140px;
+    --ticker-h: 64px;
+    --news-scrim-h: 60%;
+  }
 }
 
 .elevator-rotate {
@@ -94,6 +140,9 @@
   height: 100%;
 }
 
+/* =========================================================
+   DASHBOARD GRID
+   ========================================================= */
 .dashboard-grid {
   gap: var(--dash-gap);
   padding: var(--dash-pad);
@@ -113,81 +162,6 @@
 .dashboard-news {
   grid-column: 2;
   grid-row: 2;
-}
-
-@media (orientation: portrait) {
-  .elevator-screen {
-    --dash-gap: 1.5rem;
-    --dash-pad: 1.5rem;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 3fr 7fr;
-  }
-
-  .dashboard-header {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .dashboard-avisos {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .dashboard-news {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  .news-content {
-    max-width: 100% !important;
-  }
-}
-
-.force-portrait .elevator-screen {
-  --dash-gap: 1.5rem;
-  --dash-pad: 1.5rem;
-}
-
-.force-portrait .dashboard-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dash-gap);
-}
-
-.force-portrait .dashboard-header {
-  flex-shrink: 0;
-  order: 0;
-}
-
-.force-portrait .dashboard-avisos {
-  flex: 0 1 auto;
-  min-height: 0;
-  order: 1;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.force-portrait .dashboard-news {
-  flex: 1 1 auto;
-  min-height: 0;
-  order: 2;
-}
-
-.force-portrait .news-content {
-  max-width: 100% !important;
-}
-
-.force-portrait .elevator-rotate {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100vh;
-  height: 100vw;
-  transform: translate(-50%, -50%) rotate(90deg);
-  transform-origin: center;
 }
 
 .force-landscape .dashboard-grid {
@@ -211,20 +185,176 @@
 }
 
 .force-landscape .news-content {
-  max-width: 72% !important;
+  max-width: 100% !important;
+}
+
+/* Portrait via rotação CSS — só aplica quando o viewport está em landscape
+   (caso: monitor físico em portrait + navegador Android em landscape).
+   Se o viewport já é portrait, não rotacionar — o conteúdo é exibido
+   nativamente no eixo correto. */
+@media (orientation: landscape) {
+  .force-portrait .elevator-rotate {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vh;
+    height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center;
+    will-change: transform;
+  }
+}
+
+.force-portrait .dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(380px, 32vh) 1fr;
+  gap: var(--dash-gap);
+}
+
+.force-portrait .dashboard-header {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.force-portrait .dashboard-avisos {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: 0;
+}
+
+.force-portrait .dashboard-news {
+  grid-column: 1;
+  grid-row: 3;
+  min-height: 0;
+}
+
+.force-portrait .news-content {
+  max-width: 100% !important;
+}
+
+/* Portrait sem rotação CSS (monitor já nativo) */
+@media (orientation: portrait) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(380px, 32vh) 1fr;
+  }
+
+  .dashboard-header {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .dashboard-avisos {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .dashboard-news {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .news-content {
+    max-width: 100% !important;
+  }
 }
 
 .glass-card {
   @apply bg-slate-900/80 border border-white/20 rounded-xl;
 }
 
-.weather-icon {
-  @apply drop-shadow;
+/* =========================================================
+   === CLOCK ===
+   ========================================================= */
+.clock-badge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(6,182,212,0.18));
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: 0.5rem;
+  padding: 4px 10px 4px 12px;
+  line-height: 1;
 }
 
-/* ── Weather card ── */
+.clock-badge-day {
+  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-weight: 700;
+  font-size: calc(var(--fs-display) * 0.34);
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-badge-month {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-weight: 600;
+  font-size: calc(var(--fs-meta) * 0.7);
+  letter-spacing: 0.08em;
+  color: rgba(147,197,253,0.9);
+  line-height: 1;
+  user-select: none;
+}
+
+.clock-time {
+  font-size: var(--fs-display);
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Portrait: layout horizontal compacto (lado a lado) */
+.force-portrait .dashboard-header {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.force-portrait .clock-container {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.force-portrait .clock-time-block {
+  align-items: flex-end;
+}
+
+@media (orientation: portrait) {
+  .elevator-screen:not(.force-landscape *) .dashboard-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .elevator-screen:not(.force-landscape *) .clock-container {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .elevator-screen:not(.force-landscape *) .clock-time-block {
+    align-items: flex-end;
+  }
+}
+
+html.perf-mode .clock-badge {
+  background: rgba(30,41,59,0.8);
+  border-color: rgba(255,255,255,0.15);
+}
+
+/* =========================================================
+   === WEATHER ===
+   ========================================================= */
 .weather-card {
-  max-width: 320px;
+  max-width: 100%;
 }
 
 .weather-card-header {
@@ -235,11 +365,102 @@
   transition: background-color 200ms ease;
 }
 
-/* Animação para notícias */
-.news-slide {
-  @apply transition-all duration-500 ease-in-out;
+/* Portrait: manter dias lado a lado, esconder 3º para caber em horizontal */
+.force-portrait .weather-compact-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
 }
 
+.force-portrait .weather-compact-row > div:nth-child(3) {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  .elevator-screen:not(.force-landscape *) .weather-compact-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+  .elevator-screen:not(.force-landscape *) .weather-compact-row > div:nth-child(3) {
+    display: none;
+  }
+}
+
+html.perf-mode .weather-card-header {
+  background: rgba(30,41,59,0.6);
+}
+
+html.perf-mode .weather-icon {
+  filter: none;
+}
+
+html.perf-mode .weather-row {
+  transition: none;
+}
+
+.weather-icon {
+  @apply drop-shadow;
+}
+
+/* =========================================================
+   === MESSAGES (avisos do síndico) ===
+   ========================================================= */
+.msg-title {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.msg-body {
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  color: rgba(255,255,255,0.88);
+}
+
+.msg-meta-text {
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+}
+
+.msg-content p {
+  margin-bottom: 0.6em;
+}
+.msg-content p:last-child {
+  margin-bottom: 0;
+}
+.msg-content ul,
+.msg-content ol {
+  padding-left: 1.2em;
+  margin-bottom: 0.5em;
+}
+.msg-content li {
+  margin-bottom: 0.25em;
+}
+
+/* Borda pulsante de aviso urgente — chama atenção sem fadiga */
+@keyframes urgent-border-pulse {
+  0%   { border-color: rgba(239, 68, 68, 0.55); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  100% { border-color: rgba(239, 68, 68, 1);    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.msg-card--urgent {
+  animation: urgent-border-pulse 2s ease-in-out infinite alternate;
+}
+
+html.perf-mode .msg-card {
+  background: rgba(30, 41, 59, 0.7);
+}
+html.perf-mode .msg-card--urgent {
+  background: rgba(69, 10, 10, 0.85);
+  animation: none;
+}
+
+/* =========================================================
+   === NEWS CAROUSEL ===
+   ========================================================= */
 .fade-stack {
   position: relative;
 }
@@ -257,42 +478,120 @@
   pointer-events: auto;
 }
 
-/* Indicador de conexão */
-.connection-pulse {
-  @apply animate-pulse;
+.news-title {
+  font-size: var(--fs-title);
+  font-weight: 900;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.news-subtitle {
+  font-size: var(--fs-subtitle);
+  line-height: 1.4;
+  color: rgba(255,255,255,0.88);
+}
+
+.news-scrim {
+  height: var(--news-scrim-h);
 }
 
 @keyframes carousel-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 .carousel-progress-bar {
   transform-origin: left center;
-  animation: carousel-progress var(--carousel-progress-duration, 10000ms) linear
-    forwards;
+  animation: carousel-progress var(--carousel-progress-duration, 10000ms) linear forwards;
 }
 
+.news-slide {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+.internal-news-title {
+  text-shadow: 0 2px 12px rgba(0,0,0,0.75);
+}
+
+.internal-news-subtitle {
+  text-shadow: 0 1px 6px rgba(0,0,0,0.65);
+}
+
+html.perf-mode .internal-news-title,
+html.perf-mode .internal-news-subtitle {
+  text-shadow: none;
+}
+
+html.perf-mode .internal-news-overlay {
+  background: rgba(0,0,0,0.6);
+}
+
+/* =========================================================
+   === MESSAGE PROGRESS BAR ===
+   ========================================================= */
 @keyframes message-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 .message-progress-bar {
   transform-origin: left center;
-  animation: message-progress var(--message-progress-duration, 15000ms) linear
-    forwards;
+  animation: message-progress var(--message-progress-duration, 15000ms) linear forwards;
 }
 
-/* Scrollbar customizada */
+/* =========================================================
+   === TICKER (rodapé) ===
+   ========================================================= */
+.news-ticker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--ticker-h);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.95) 100%);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
+.news-ticker-viewport {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.news-ticker-track {
+  display: flex;
+  white-space: nowrap;
+  animation: ticker-scroll 45s linear infinite;
+}
+
+.news-ticker-content {
+  flex-shrink: 0;
+  padding-left: 2rem;
+  font-size: var(--fs-meta);
+  color: rgba(255,255,255,0.9);
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.elevator-frame.has-ticker .dashboard-grid {
+  padding-bottom: calc(var(--ticker-h) + 8px);
+}
+
+html.perf-mode .news-ticker {
+  background: rgba(15,23,42,0.95);
+}
+
+/* =========================================================
+   === SCROLLBAR ===
+   ========================================================= */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -309,159 +608,9 @@
   @apply bg-white/30;
 }
 
-/* ── Clock badge (dia + mês rotacionado) ── */
-.clock-badge {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(6,182,212,0.18));
-  border: 1px solid rgba(59,130,246,0.35);
-  border-radius: 0.5rem;
-  padding: 2px 6px 2px 8px;
-  line-height: 1;
-}
-
-.clock-badge-day {
-  font-family: var(--font-display, 'Poppins', sans-serif);
-  font-weight: 700;
-  font-size: 1.5rem;
-  color: #fff;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.clock-badge-month {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-family: var(--font-display, 'Poppins', sans-serif);
-  font-weight: 600;
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  color: rgba(147,197,253,0.9);
-  line-height: 1;
-  user-select: none;
-}
-
-/* ── Perf-mode overrides (dispositivos fracos) ── */
-html.perf-mode .clock-badge {
-  background: rgba(30,41,59,0.8);
-  border-color: rgba(255,255,255,0.15);
-}
-
-html.perf-mode .weather-card-header {
-  background: rgba(30,41,59,0.6);
-}
-
-html.perf-mode .weather-icon {
-  filter: none;
-}
-
-html.perf-mode .weather-row {
-  transition: none;
-}
-
-/* ── MessageBoard — estilos de conteúdo HTML ── */
-.msg-content p {
-  margin-bottom: 0.6em;
-}
-.msg-content p:last-child {
-  margin-bottom: 0;
-}
-.msg-content ul,
-.msg-content ol {
-  padding-left: 1.2em;
-  margin-bottom: 0.5em;
-}
-.msg-content li {
-  margin-bottom: 0.25em;
-}
-
-/* Perf-mode: avisos usam cores sólidas e sem gradientes */
-html.perf-mode .msg-card {
-  background: rgba(30, 41, 59, 0.7);
-}
-html.perf-mode .msg-card--urgent {
-  background: rgba(69, 10, 10, 0.85);
-}
-html.perf-mode .msg-meta-block {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-/* ── Notícia interna (notícia do dia) ── */
-.internal-news-title {
-  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
-}
-
-.internal-news-subtitle {
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
-}
-
-/* Perf-mode: remove text-shadow e troca gradiente por cor sólida */
-html.perf-mode .internal-news-title,
-html.perf-mode .internal-news-subtitle {
-  text-shadow: none;
-}
-
-html.perf-mode .internal-news-overlay {
-  background: rgba(0,0,0,0.6);
-}
-
-/* ── News ticker (rodapé) ── */
-.news-ticker {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--ticker-h);
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  background: linear-gradient(90deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.95) 100%);
-  border-top: 1px solid rgba(255,255,255,0.1);
-  overflow: hidden;
-}
-
-.news-ticker-label {
-  flex-shrink: 0;
-  padding: 0 12px;
-  font-family: var(--font-display, 'Poppins', sans-serif);
-  font-weight: 700;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  color: #facc15;
-  border-right: 1px solid rgba(255,255,255,0.1);
-  user-select: none;
-}
-
-.news-ticker-track {
-  display: flex;
-  white-space: nowrap;
-  animation: ticker-scroll 180s linear infinite;
-}
-
-.news-ticker-content {
-  flex-shrink: 0;
-  padding-left: 2rem;
-  font-size: 1.1em;
-  color: rgba(255,255,255,0.85);
-}
-
-@keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/* Quando o ticker está ativo, o grid precisa de espaço inferior */
-.elevator-frame.has-ticker .dashboard-grid {
-  padding-bottom: calc(var(--ticker-h) + 6px);
-}
-
-/* Perf-mode: ticker com fundo sólido e animação mais leve */
-html.perf-mode .news-ticker {
-  background: rgba(15,23,42,0.95);
-}
-
-html.perf-mode .news-ticker-track {
-  animation-duration: 120s;
+/* =========================================================
+   === CONNECTION STATUS ===
+   ========================================================= */
+.connection-pulse {
+  @apply animate-pulse;
 }
