@@ -10,6 +10,7 @@ import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw } from "lucide
 import { Button } from "@/components/ui/button";
 import { requestAdminJson } from "@/services/apiClient";
 import { getPredioHubUrl } from "@/lib/backendUrl";
+import { computeLatestVersion, isScreenOutdated } from "@/lib/screenVersion";
 
 interface ScreenInfo {
   connectionId: string;
@@ -45,11 +46,6 @@ function hasStaleHeartbeat(screen: ScreenInfo): boolean {
   if (!screen.connected) return false;
   const diff = Date.now() - new Date(screen.lastHeartbeat).getTime();
   return diff > 120_000; // 2 minutos
-}
-
-function isOutdated(screenVersion: string | undefined | null, currentVersion: string): boolean {
-  if (!screenVersion) return true;
-  return screenVersion !== currentVersion;
 }
 
 export function ScreenMonitor({ token }: ScreenMonitorProps) {
@@ -186,6 +182,13 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const onlineCount = screens.filter((s) => s.connected).length;
   const offlineCount = screens.length - onlineCount;
 
+  // "Mais recente" = maior build entre o do próprio master e o de todas as telas.
+  // Evita falso "Desatualizada" quando a aba do master está num build antigo.
+  const latestVersion = computeLatestVersion([
+    __APP_VERSION__,
+    ...screens.map((s) => s.appVersion),
+  ]);
+
   const handleForceRefresh = async (screen: ScreenInfo) => {
     const label = screen.connected ? "Enviado" : "Agendado";
     setRefreshingIds((prev) => new Map(prev).set(screen.deviceId, label));
@@ -297,7 +300,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                     {slugScreens.map((screen) => {
                       const online = screen.connected;
                       const stale = hasStaleHeartbeat(screen);
-                      const outdated = isOutdated(screen.appVersion, __APP_VERSION__);
+                      const outdated = isScreenOutdated(screen.appVersion, latestVersion);
                       const refreshLabel = refreshingIds.get(screen.deviceId);
                       const isRefreshing = refreshLabel !== undefined;
                       return (
@@ -307,9 +310,9 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                             online ? "bg-slate-50" : "bg-slate-100/70"
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div
-                              className={`w-3 h-3 rounded-full ${
+                              className={`w-3 h-3 rounded-full flex-shrink-0 ${
                                 online
                                   ? stale
                                     ? "bg-yellow-500"
@@ -317,7 +320,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                                   : "bg-slate-400"
                               }`}
                             />
-                            <div>
+                            <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-medium">
                                   Tela:{" "}
@@ -358,38 +361,40 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <div className="text-left sm:text-right">
-                              <p className="text-xs text-slate-500">
-                                Último heartbeat
-                              </p>
-                              <p
-                                className={`text-xs font-medium ${
-                                  online && !stale
-                                    ? "text-green-600"
-                                    : "text-slate-500"
+                          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                            <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+                              <div className="text-left sm:text-right">
+                                <p className="text-xs text-slate-500">
+                                  Último heartbeat
+                                </p>
+                                <p
+                                  className={`text-xs font-medium ${
+                                    online && !stale
+                                      ? "text-green-600"
+                                      : "text-slate-500"
+                                  }`}
+                                >
+                                  {formatTimeAgo(screen.lastHeartbeat)}
+                                </p>
+                              </div>
+                              <div
+                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                                  online && screen.isVisible
+                                    ? "bg-blue-50 text-blue-600"
+                                    : "bg-slate-100 text-slate-500"
                                 }`}
                               >
-                                {formatTimeAgo(screen.lastHeartbeat)}
-                              </p>
-                            </div>
-                            <div
-                              className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                                online && screen.isVisible
-                                  ? "bg-blue-50 text-blue-600"
-                                  : "bg-slate-100 text-slate-500"
-                              }`}
-                            >
-                              {online && screen.isVisible ? (
-                                <Eye className="w-3 h-3" />
-                              ) : (
-                                <EyeOff className="w-3 h-3" />
-                              )}
-                              {online
-                                ? screen.isVisible
-                                  ? "Visível"
-                                  : "Background"
-                                : "—"}
+                                {online && screen.isVisible ? (
+                                  <Eye className="w-3 h-3" />
+                                ) : (
+                                  <EyeOff className="w-3 h-3" />
+                                )}
+                                {online
+                                  ? screen.isVisible
+                                    ? "Visível"
+                                    : "Background"
+                                  : "—"}
+                              </div>
                             </div>
                             <Button
                               size="sm"
@@ -401,7 +406,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                                   ? "Forçar reload da tela"
                                   : "Tela offline — a atualização será aplicada quando ela reconectar"
                               }
-                              className="text-xs h-11 sm:h-9 px-3"
+                              className="text-xs h-11 sm:h-9 px-3 w-full sm:w-auto"
                             >
                               <RotateCw className={`w-4 h-4 mr-1.5 ${isRefreshing ? "animate-spin" : ""}`} />
                               {isRefreshing

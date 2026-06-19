@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { ADMIN_UNAUTHORIZED_EVENT } from "@/services/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,12 +56,32 @@ export default function Master() {
   });
   const [editingSindicoId, setEditingSindicoId] = useState<number | null>(null);
 
+  // Mantém o token atual acessível dentro de listeners sem recriá-los
+  const tokenRef = useRef<string | null>(token);
+  tokenRef.current = token;
+
   // Check for stored token on mount
   useEffect(() => {
     const storedToken = localStorage.getItem("developerToken");
     if (storedToken) {
       setToken(storedToken);
     }
+  }, []);
+
+  // Sessão expirada (401 em qualquer requisição admin): volta ao login
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (!tokenRef.current) return; // já deslogado
+      tokenRef.current = null; // dedupe se vários 401 dispararem juntos
+      localStorage.removeItem("developerToken");
+      setToken(null);
+      setPredios([]);
+      setSindicos([]);
+      toast.error("Sessão expirada. Faça login novamente.");
+    };
+    window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () =>
+      window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, handleUnauthorized);
   }, []);
 
   // Load predios when token is set
@@ -183,12 +204,12 @@ export default function Master() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Acesso de Desenvolvedor</CardTitle>
             <CardDescription>
-              Faça Login com suas credenciais de desenvolvedor
+              Faça login com suas credenciais de desenvolvedor
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -202,6 +223,11 @@ export default function Master() {
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
                   disabled={loading}
+                  autoComplete="username"
+                  inputMode="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -209,13 +235,15 @@ export default function Master() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="123123"
+                  placeholder="••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   disabled={loading}
+                  autoComplete="current-password"
+                  className="h-11"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full h-11" disabled={loading}>
                 {loading ? "Conectando..." : "Conectar"}
               </Button>
             </form>
@@ -226,25 +254,35 @@ export default function Master() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Painel Master</h1>
-          <Button variant="outline" onClick={handleLogout}>
+        <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold">Painel Master</h1>
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            className="h-11 sm:h-10"
+          >
             Desconectar
           </Button>
         </div>
 
         <Tabs defaultValue="predios" className="w-full">
-          <TabsList>
-            <TabsTrigger value="predios">Prédios</TabsTrigger>
-            <TabsTrigger value="sindicos">Sindicos</TabsTrigger>
-            <TabsTrigger value="monitor">Monitor</TabsTrigger>
+          <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-auto sm:h-10 p-1">
+            <TabsTrigger value="predios" className="h-11 sm:h-8 text-sm">
+              Prédios
+            </TabsTrigger>
+            <TabsTrigger value="sindicos" className="h-11 sm:h-8 text-sm">
+              Síndicos
+            </TabsTrigger>
+            <TabsTrigger value="monitor" className="h-11 sm:h-8 text-sm">
+              Monitor
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="predios">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle>Gerenciar Prédios</CardTitle>
                   <CardDescription>
@@ -257,6 +295,7 @@ export default function Master() {
                     setEditingPredioId(null);
                     setShowPredioDialog(true);
                   }}
+                  className="h-11 sm:h-10 w-full sm:w-auto"
                 >
                   + Novo Prédio
                 </Button>
@@ -384,8 +423,9 @@ export default function Master() {
                             setEditingSindicoId(null);
                             setShowSindicoDialog(true);
                           }}
+                          className="h-11 sm:h-10 w-full sm:w-auto"
                         >
-                          + Novo Sindico
+                          + Novo Síndico
                         </Button>
                       </div>
 

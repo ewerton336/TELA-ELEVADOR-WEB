@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { ADMIN_UNAUTHORIZED_EVENT } from "@/services/apiClient";
 import {
   AdminLoginForm,
   AdminHeader,
@@ -50,6 +52,23 @@ export function Admin() {
     const role = getRoleFromToken(token);
     setIsDeveloper(role?.toLowerCase() === "developer");
   }, [token]);
+
+  // Sessão expirada (401): volta ao login em vez de estourar erro em tudo
+  const authedRef = useRef(isAuthenticated);
+  authedRef.current = isAuthenticated;
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (!authedRef.current) return;
+      authedRef.current = false;
+      setIsAuthenticated(false);
+      setToken(null);
+      setIsDeveloper(false);
+      toast.error("Sessão expirada. Faça login novamente.");
+    };
+    window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () =>
+      window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, []);
 
   const handleLogin = (newToken: string) => {
     setToken(newToken);

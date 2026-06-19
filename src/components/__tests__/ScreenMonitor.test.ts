@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { computeLatestVersion, isScreenOutdated } from "@/lib/screenVersion";
 
 // -------------------------------------------------------
 // Reimplementação das funções puras extraídas do ScreenMonitor
@@ -35,11 +36,6 @@ interface ScreenInfo {
 function isScreenAlive(screen: ScreenInfo): boolean {
   const diff = Date.now() - new Date(screen.lastHeartbeat).getTime();
   return diff < 120_000;
-}
-
-function isOutdated(screenVersion: string | undefined | null, currentVersion: string): boolean {
-  if (!screenVersion) return true;
-  return screenVersion !== currentVersion;
 }
 
 // -------------------------------------------------------
@@ -128,26 +124,51 @@ describe("isScreenAlive", () => {
   });
 });
 
-describe("isOutdated", () => {
-  const currentVersion = "2026-03-06T12:00:00.000Z";
+describe("computeLatestVersion", () => {
+  const vOld = "2026-03-05T10:00:00.000Z";
+  const vNew = "2026-06-18T22:00:00.000Z";
 
-  it("deve retornar true quando screenVersion é undefined", () => {
-    expect(isOutdated(undefined, currentVersion)).toBe(true);
+  it("retorna a versão mais recente entre as informadas", () => {
+    expect(computeLatestVersion([vOld, vNew])).toBe(vNew);
+    expect(computeLatestVersion([vNew, vOld])).toBe(vNew);
   });
 
-  it("deve retornar true quando screenVersion é null", () => {
-    expect(isOutdated(null, currentVersion)).toBe(true);
+  it("ignora versões nulas/vazias/inválidas", () => {
+    expect(computeLatestVersion([null, vOld, "", undefined, "lixo"])).toBe(vOld);
   });
 
-  it("deve retornar true quando screenVersion é string vazia", () => {
-    expect(isOutdated("", currentVersion)).toBe(true);
+  it("retorna null quando não há nenhuma versão válida", () => {
+    expect(computeLatestVersion([null, undefined, "", "abc"])).toBeNull();
+  });
+});
+
+describe("isScreenOutdated", () => {
+  const vOld = "2026-03-05T10:00:00.000Z";
+  const vNew = "2026-06-18T22:00:00.000Z";
+
+  it("marca como desatualizada quando a tela é mais antiga que a referência", () => {
+    expect(isScreenOutdated(vOld, vNew)).toBe(true);
   });
 
-  it("deve retornar false quando versões são iguais", () => {
-    expect(isOutdated(currentVersion, currentVersion)).toBe(false);
+  it("NÃO marca como desatualizada quando a tela está na versão mais recente", () => {
+    expect(isScreenOutdated(vNew, vNew)).toBe(false);
   });
 
-  it("deve retornar true quando versões são diferentes", () => {
-    expect(isOutdated("2026-03-05T10:00:00.000Z", currentVersion)).toBe(true);
+  it("NÃO marca tela nova como desatualizada quando o master está num build antigo (regressão do bug)", () => {
+    // master antigo (vOld) + tela nova (vNew); a referência (latest) é vNew
+    const latest = computeLatestVersion([vOld, vNew]);
+    expect(isScreenOutdated(vNew, latest)).toBe(false);
+    // a tela antiga, essa sim, fica desatualizada
+    expect(isScreenOutdated(vOld, latest)).toBe(true);
+  });
+
+  it("trata versão ausente como desatualizada (desconhecida)", () => {
+    expect(isScreenOutdated(null, vNew)).toBe(true);
+    expect(isScreenOutdated(undefined, vNew)).toBe(true);
+    expect(isScreenOutdated("", vNew)).toBe(true);
+  });
+
+  it("não marca como desatualizada quando não há referência válida", () => {
+    expect(isScreenOutdated(vOld, null)).toBe(false);
   });
 });

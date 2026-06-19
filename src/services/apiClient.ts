@@ -1,5 +1,14 @@
 import { buildBackendUrl } from "@/lib/backendUrl";
 
+/** Evento global emitido quando uma requisição admin retorna 401 (sessão expirada). */
+export const ADMIN_UNAUTHORIZED_EVENT = "admin-unauthorized";
+
+function notifyUnauthorized() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(ADMIN_UNAUTHORIZED_EVENT));
+  }
+}
+
 type ApiErrorDetails = {
   status: number;
   statusText: string;
@@ -85,6 +94,12 @@ export async function requestAdminJson<T>(
   }
 
   if (!res.ok) {
+    // Sessão expirada / token inválido: sinaliza para a UI voltar ao login
+    // em vez de cada requisição estourar um erro genérico.
+    if (res.status === 401) {
+      notifyUnauthorized();
+    }
+
     const details: ApiErrorDetails = {
       status: res.status,
       statusText: res.statusText,
