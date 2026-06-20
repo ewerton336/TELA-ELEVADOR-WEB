@@ -95,7 +95,7 @@
   --dash-pad: 1.5rem;
   --dash-sidebar-w: 440px;
   --dash-header-min: 120px;
-  --ticker-h: 56px;
+  --ticker-h: 44px;
   --news-scrim-h: 50%;
 }
 
@@ -111,7 +111,7 @@
   --dash-gap: 1.25rem;
   --dash-pad: 1.5rem;
   --dash-header-min: 140px;
-  --ticker-h: 64px;
+  --ticker-h: 48px;
   --news-scrim-h: 60%;
 }
 
@@ -125,7 +125,7 @@
     --fs-meta: 16px;
     --fs-tiny: 13px;
     --dash-header-min: 140px;
-    --ticker-h: 64px;
+    --ticker-h: 48px;
     --news-scrim-h: 60%;
   }
 }
@@ -407,7 +407,7 @@ html.perf-mode .weather-row {
    === MESSAGES (avisos do síndico) ===
    ========================================================= */
 .msg-title {
-  font-size: var(--fs-title);
+  font-size: calc(var(--fs-title) * 0.68);
   font-weight: 700;
   line-height: 1.15;
   color: #fff;

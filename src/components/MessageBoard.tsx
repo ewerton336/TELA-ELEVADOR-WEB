@@ -1,10 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useLayoutEffect } from "react";
 import { Message } from "@/services/messageService";
 import { MessageSquare, AlertTriangle, Clock, Calendar } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/dateFormatter";
 
 interface MessageBoardProps {
   messages: Message[];
+}
+
+function useFitText(content: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    el.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(el).fontSize) || 22;
+    const min = 12;
+    let guard = 0;
+    while (size > min && box.scrollHeight > box.clientHeight && guard < 60) {
+      size -= 1;
+      el.style.fontSize = `${size}px`;
+      guard += 1;
+    }
+  }, [content]);
+  return ref;
 }
 
 export function MessageBoard({ messages }: MessageBoardProps) {
@@ -179,6 +198,7 @@ function NormalCard({
   index?: number;
   total?: number;
 }) {
+  const contentRef = useFitText(message.content);
   return (
     <div className="msg-card h-full flex flex-col rounded-2xl border border-white/10 bg-slate-800/40 overflow-hidden">
       {/* Bloco 1 — Tipo + data/hora + contador */}
@@ -213,6 +233,7 @@ function NormalCard({
 
       <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
         <div
+          ref={contentRef}
           className="msg-content msg-body"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
@@ -231,6 +252,7 @@ function UrgentCard({
   index?: number;
   total?: number;
 }) {
+  const contentRef = useFitText(message.content);
   return (
     <div className="msg-card msg-card--urgent h-full flex flex-col rounded-2xl border-2 border-red-500 bg-red-950/85 overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4 flex-shrink-0">
@@ -264,6 +286,7 @@ function UrgentCard({
 
       <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
         <div
+          ref={contentRef}
           className="msg-content msg-body text-white"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
