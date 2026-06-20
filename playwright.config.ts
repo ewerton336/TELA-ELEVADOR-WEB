@@ -41,12 +41,16 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [["list"]],
+  // O perfil do dispositivo é aplicado no `use` GLOBAL — assim qualquer teste,
+  // em qualquer projeto, sempre abre na resolução da tela do elevador
+  // (960×540 @ devicePixelRatio 2), independente do monitor do dev.
   use: {
     baseURL: BASE_URL,
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
+    ...DISPOSITIVO_PRODUCAO,
   },
   projects: [
     {

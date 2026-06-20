@@ -268,7 +268,7 @@ export default function Master() {
         </div>
 
         <Tabs defaultValue="predios" className="w-full">
-          <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-auto sm:h-10 p-1">
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 sm:inline-flex h-auto sm:h-10 p-1">
             <TabsTrigger value="predios" className="h-11 sm:h-8 text-sm">
               Prédios
             </TabsTrigger>
@@ -277,6 +277,9 @@ export default function Master() {
             </TabsTrigger>
             <TabsTrigger value="monitor" className="h-11 sm:h-8 text-sm">
               Monitor
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="h-11 sm:h-8 text-sm">
+              Preview
             </TabsTrigger>
           </TabsList>
 
@@ -513,6 +516,58 @@ export default function Master() {
 
           <TabsContent value="monitor">
             <ScreenMonitor token={token} />
+          </TabsContent>
+
+          <TabsContent value="preview">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pré-visualização das telas</CardTitle>
+                <CardDescription>
+                  Abre a tela do elevador na resolução de produção (960×540).
+                  Dentro da página há os botões de escala (1×/1.5×/2×) para
+                  imitar o painel físico 1920×1080.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <a
+                  href="/preview/gramado"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white px-4 h-10 text-sm font-medium hover:bg-blue-700"
+                >
+                  Abrir preview (gramado)
+                </a>
+
+                {predios.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                      Por prédio
+                    </p>
+                    {predios.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-slate-50"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{p.nome}</p>
+                          <p className="text-sm text-slate-500 truncate">
+                            {p.slug}
+                          </p>
+                        </div>
+                        <a
+                          href={`/preview/${p.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border bg-white px-3 h-9 text-sm font-medium hover:bg-slate-100 flex-shrink-0"
+                        >
+                          Abrir preview
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
