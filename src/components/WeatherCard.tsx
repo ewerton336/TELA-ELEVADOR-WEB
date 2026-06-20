@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { WeatherData, WeatherDay } from "@/services/weatherService";
+import { WeatherIcon } from "@/components/WeatherIcon";
 import { MapPin, Thermometer } from "lucide-react";
 
 interface WeatherCardProps {
@@ -23,9 +24,13 @@ function ForecastRow({
     <div
       className={`weather-row flex items-center gap-3 px-3 py-2 ${highlight ? "bg-white/5" : ""}`}
     >
-      <span className="text-2xl leading-none shrink-0 weather-icon">
-        {day.weatherIcon}
-      </span>
+      <WeatherIcon
+        weatherCode={day.weatherCode}
+        fallbackEmoji={day.weatherIcon}
+        alt={day.weatherDescription}
+        sizeClass="w-9 h-9"
+        className="weather-icon text-2xl"
+      />
 
       <div className="flex flex-col min-w-0 flex-1">
         <span className="text-white font-semibold text-sm leading-tight truncate">
@@ -86,7 +91,13 @@ export const WeatherCard = memo(function WeatherCard({
         <div className="flex items-center gap-4">
           {/* Hoje */}
           <div className="flex items-center gap-2">
-            <span className="text-2xl leading-none">{today.weatherIcon}</span>
+            <WeatherIcon
+              weatherCode={today.weatherCode}
+              fallbackEmoji={today.weatherIcon}
+              alt={today.weatherDescription}
+              sizeClass="w-8 h-8"
+              className="text-2xl"
+            />
             <div className="flex flex-col leading-none">
               <span className="text-white/60 text-xs font-medium uppercase">Hoje</span>
               <div className="flex items-center gap-1">
@@ -103,9 +114,13 @@ export const WeatherCard = memo(function WeatherCard({
           {/* Amanhã */}
           {data.days[1] && (
             <div className="flex items-center gap-2 border-l border-white/10 pl-4">
-              <span className="text-2xl leading-none">
-                {data.days[1].weatherIcon}
-              </span>
+              <WeatherIcon
+                weatherCode={data.days[1].weatherCode}
+                fallbackEmoji={data.days[1].weatherIcon}
+                alt={data.days[1].weatherDescription}
+                sizeClass="w-8 h-8"
+                className="text-2xl"
+              />
               <div className="flex flex-col leading-none">
                 <span className="text-white/50 text-xs font-medium uppercase">Amanhã</span>
                 <div className="flex items-center gap-1">

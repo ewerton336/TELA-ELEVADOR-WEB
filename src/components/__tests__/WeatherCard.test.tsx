@@ -31,6 +31,7 @@ function makeWeatherData(overrides: Partial<WeatherData> = {}): WeatherData {
         dayName: "Quarta",
         temperatureMax: 24,
         temperatureMin: 16,
+        weatherCode: 2,
         weatherDescription: "Parcialmente nublado",
         weatherIcon: "⛅",
       }),
@@ -62,9 +63,12 @@ describe("WeatherCard — clima atual (modo padrão)", () => {
     expect(screen.getByText("18°")).toBeInTheDocument();
   });
 
-  it("deve renderizar ícone do tempo de hoje", () => {
+  it("deve renderizar ícone animado do tempo de hoje", () => {
     render(<WeatherCard data={makeWeatherData()} />);
-    expect(screen.getByText("☀️")).toBeInTheDocument();
+    // O ícone agora é um SVG animado (img) com a descrição como alt.
+    const icon = screen.getByAltText("Céu limpo");
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("src", "/weather/clear-day.svg");
   });
 
   it("deve renderizar descrição do tempo de hoje", () => {
@@ -86,9 +90,11 @@ describe("WeatherCard — lista de dias", () => {
     expect(screen.getByText("Amanhã")).toBeInTheDocument();
   });
 
-  it("deve renderizar ícone e temperaturas do segundo dia", () => {
+  it("deve renderizar ícone animado e temperaturas do segundo dia", () => {
     render(<WeatherCard data={makeWeatherData()} />);
-    expect(screen.getByText("⛅")).toBeInTheDocument();
+    const icon = screen.getByAltText("Parcialmente nublado");
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("src", "/weather/partly-cloudy-day.svg");
     expect(screen.getByText("24°")).toBeInTheDocument();
     expect(screen.getByText("16°")).toBeInTheDocument();
   });

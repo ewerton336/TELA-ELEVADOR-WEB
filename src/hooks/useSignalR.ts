@@ -13,6 +13,73 @@ import { getPredioHubUrl, buildBackendUrl } from "@/lib/backendUrl";
 import { getScreenDeviceId } from "@/lib/screenDeviceId";
 import { setCache } from "@/lib/cache";
 
+/**
+ * Coleta os detalhes da tela onde a aplicação está rodando (resolução, zoom,
+ * viewport, orientação etc.) para o monitor master poder comparar com o que os
+ * testes assumem (ex.: 1920×1080 / 1080×1920).
+ */
+function collectScreenDetails() {
+  const vv = window.visualViewport;
+  const docEl = document.documentElement;
+  const container = document.querySelector(
+    ".elevator-screen",
+  ) as HTMLElement | null;
+  const dpr = window.devicePixelRatio || 1;
+  const estimatedZoom = docEl?.clientWidth
+    ? Math.round((window.innerWidth / docEl.clientWidth) * 100) / 100
+    : null;
+
+  return {
+    capturedAtClient: new Date().toISOString(),
+    appVersion: __APP_VERSION__,
+    screen: {
+      width: window.screen.width,
+      height: window.screen.height,
+      availWidth: window.screen.availWidth,
+      availHeight: window.screen.availHeight,
+      colorDepth: window.screen.colorDepth,
+      pixelDepth: window.screen.pixelDepth,
+    },
+    window: {
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      outerWidth: window.outerWidth,
+      outerHeight: window.outerHeight,
+      devicePixelRatio: dpr,
+    },
+    visualViewport: vv
+      ? {
+          width: Math.round(vv.width),
+          height: Math.round(vv.height),
+          scale: vv.scale,
+        }
+      : null,
+    zoom: {
+      devicePixelRatio: dpr,
+      visualViewportScale: vv?.scale ?? null,
+      estimatedZoom,
+    },
+    orientation:
+      window.screen.orientation?.type ??
+      (window.innerWidth >= window.innerHeight ? "landscape" : "portrait"),
+    documentElement: {
+      clientWidth: docEl?.clientWidth ?? null,
+      clientHeight: docEl?.clientHeight ?? null,
+    },
+    elevatorContainer: container
+      ? {
+          offsetWidth: container.offsetWidth,
+          offsetHeight: container.offsetHeight,
+          clientWidth: container.clientWidth,
+          clientHeight: container.clientHeight,
+        }
+      : null,
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    language: navigator.language,
+  };
+}
+
 interface UseSignalROptions {
   slug: string;
   onAvisosReceived: (messages: Message[]) => void;
@@ -255,6 +322,22 @@ export function useSignalR({
           body: JSON.stringify({
             deviceId: getScreenDeviceId(),
             imageBase64: dataUrl,
+          }),
+        });
+      } catch {
+        void 0;
+      }
+    });
+
+    connection.on("RequestScreenDetails", async () => {
+      try {
+        const details = collectScreenDetails();
+        await fetch(buildBackendUrl("/api/admin/monitor/details-data"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deviceId: getScreenDeviceId(),
+            details,
           }),
         });
       } catch {

@@ -6,7 +6,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { requestAdminJson } from "@/services/apiClient";
@@ -24,8 +24,18 @@ interface ScreenInfo {
   connected: boolean;
   disconnectedAt?: string | null;
   pendingRefresh?: boolean;
+  pendingScreenshot?: boolean;
+  pendingDetails?: boolean;
   userAgent?: string;
   appVersion?: string;
+}
+
+// Detalhes da tela reportados pela tela do elevador (resolução, zoom etc.)
+type ScreenDetails = Record<string, unknown>;
+
+interface CaptureTimes {
+  screenshotAt?: string;
+  detailsAt?: string;
 }
 
 interface ScreenMonitorProps {
@@ -42,6 +52,69 @@ function formatUptime(seconds: number): string {
 
 import { formatTimeAgo } from "@/lib/dateFormatter";
 
+// Formata os detalhes da tela em linhas legíveis (label → valor) para o modal.
+function formatScreenDetailRows(
+  details: ScreenDetails,
+): { label: string; value: string }[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = details as any;
+  const dim = (w?: unknown, h?: unknown) =>
+    w != null && h != null ? `${w} × ${h}` : "—";
+  return [
+    { label: "Resolução física", value: dim(d.screen?.width, d.screen?.height) },
+    {
+      label: "Resolução disponível",
+      value: dim(d.screen?.availWidth, d.screen?.availHeight),
+    },
+    {
+      label: "Viewport (janela)",
+      value: dim(d.window?.innerWidth, d.window?.innerHeight),
+    },
+    {
+      label: "Viewport visual",
+      value: d.visualViewport
+        ? `${dim(d.visualViewport.width, d.visualViewport.height)} (escala ${d.visualViewport.scale})`
+        : "—",
+    },
+    {
+      label: "Device Pixel Ratio",
+      value: String(
+        d.window?.devicePixelRatio ?? d.zoom?.devicePixelRatio ?? "—",
+      ),
+    },
+    {
+      label: "Zoom estimado",
+      value:
+        d.zoom?.estimatedZoom != null
+          ? `${Math.round(d.zoom.estimatedZoom * 100)}%`
+          : "—",
+    },
+    { label: "Orientação", value: String(d.orientation ?? "—") },
+    {
+      label: "Profundidade de cor",
+      value: d.screen?.colorDepth != null ? `${d.screen.colorDepth} bits` : "—",
+    },
+    {
+      label: "Container .elevator-screen",
+      value: d.elevatorContainer
+        ? dim(d.elevatorContainer.offsetWidth, d.elevatorContainer.offsetHeight)
+        : "—",
+    },
+    {
+      label: "documentElement",
+      value: dim(d.documentElement?.clientWidth, d.documentElement?.clientHeight),
+    },
+    { label: "Plataforma", value: String(d.platform ?? "—") },
+    { label: "Idioma", value: String(d.language ?? "—") },
+    {
+      label: "Versão do app",
+      value: d.appVersion
+        ? new Date(d.appVersion).toLocaleString("pt-BR")
+        : "—",
+    },
+  ];
+}
+
 // Heartbeat parado por muito tempo, mesmo com conexão ativa (tela travada)
 function hasStaleHeartbeat(screen: ScreenInfo): boolean {
   if (!screen.connected) return false;
@@ -56,12 +129,28 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   // deviceIds com comando de atualização em andamento → "Enviado" | "Agendado"
   const [refreshingIds, setRefreshingIds] = useState<Map<string, string>>(new Map());
   const [capturingIds, setCapturingIds] = useState<Set<string>>(new Set());
+  const [capturingDetailsIds, setCapturingDetailsIds] = useState<Set<string>>(new Set());
   const [screenshotUrls, setScreenshotUrls] = useState<Map<string, string>>(new Map());
   const [openScreenshotId, setOpenScreenshotId] = useState<string | null>(null);
+  // deviceId → últimos detalhes (resolução/zoom/etc.) obtidos
+  const [screenDetails, setScreenDetails] = useState<Map<string, { capturedAt: string; details: ScreenDetails }>>(new Map());
+  const [openDetailsId, setOpenDetailsId] = useState<string | null>(null);
+  // deviceId → data/hora do último print e dos últimos detalhes obtidos
+  const [captureTimes, setCaptureTimes] = useState<Map<string, CaptureTimes>>(new Map());
   const connectionRef = useRef<HubConnection | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const captureTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const detailsTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screenshotUrlsRef = useRef<Map<string, string>>(new Map());
+
+  // Atualiza (merge) a data/hora do último print/detalhes de uma tela.
+  const mergeCaptureTime = useCallback((deviceId: string, patch: CaptureTimes) => {
+    setCaptureTimes((prev) => {
+      const next = new Map(prev);
+      next.set(deviceId, { ...next.get(deviceId), ...patch });
+      return next;
+    });
+  }, []);
 
   const tokenRef = useRef(token);
   tokenRef.current = token;
@@ -76,6 +165,22 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
 
   const stopCapturing = useCallback((deviceId: string) => {
     setCapturingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(deviceId);
+      return next;
+    });
+  }, []);
+
+  const clearDetailsTimer = useCallback((deviceId: string) => {
+    const timer = detailsTimersRef.current.get(deviceId);
+    if (timer) {
+      clearTimeout(timer);
+      detailsTimersRef.current.delete(deviceId);
+    }
+  }, []);
+
+  const stopCapturingDetails = useCallback((deviceId: string) => {
+    setCapturingDetailsIds((prev) => {
       const next = new Set(prev);
       next.delete(deviceId);
       return next;
@@ -160,31 +265,73 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
       },
     );
 
-    connection.on("ScreenshotReady", async ({ deviceId }: { deviceId: string }) => {
-      try {
-        const res = await fetch(
-          buildBackendUrl(`/api/admin/monitor/screenshot/${deviceId}`),
-          {
-            headers: tokenRef.current
-              ? { Authorization: `Bearer ${tokenRef.current}` }
-              : {},
-          },
-        );
-        if (!res.ok) return;
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const previous = screenshotUrlsRef.current.get(deviceId);
-        if (previous) URL.revokeObjectURL(previous);
-        screenshotUrlsRef.current.set(deviceId, url);
-        setScreenshotUrls((prev) => new Map(prev).set(deviceId, url));
-        clearCaptureTimer(deviceId);
-        stopCapturing(deviceId);
-        setOpenScreenshotId(deviceId);
-      } catch {
-        clearCaptureTimer(deviceId);
-        stopCapturing(deviceId);
-      }
-    });
+    connection.on(
+      "ScreenshotReady",
+      async ({ deviceId, capturedAt }: { deviceId: string; capturedAt?: string }) => {
+        try {
+          const res = await fetch(
+            buildBackendUrl(`/api/admin/monitor/screenshot/${deviceId}`),
+            {
+              headers: tokenRef.current
+                ? { Authorization: `Bearer ${tokenRef.current}` }
+                : {},
+            },
+          );
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const previous = screenshotUrlsRef.current.get(deviceId);
+          if (previous) URL.revokeObjectURL(previous);
+          screenshotUrlsRef.current.set(deviceId, url);
+          setScreenshotUrls((prev) => new Map(prev).set(deviceId, url));
+          mergeCaptureTime(deviceId, {
+            screenshotAt: capturedAt ?? new Date().toISOString(),
+          });
+          clearCaptureTimer(deviceId);
+          stopCapturing(deviceId);
+          setOpenScreenshotId(deviceId);
+        } catch {
+          clearCaptureTimer(deviceId);
+          stopCapturing(deviceId);
+        }
+      },
+    );
+
+    connection.on(
+      "ScreenDetailsReady",
+      async ({ deviceId, capturedAt }: { deviceId: string; capturedAt?: string }) => {
+        try {
+          const res = await fetch(
+            buildBackendUrl(`/api/admin/monitor/details/${deviceId}`),
+            {
+              headers: tokenRef.current
+                ? { Authorization: `Bearer ${tokenRef.current}` }
+                : {},
+            },
+          );
+          if (!res.ok) return;
+          const payload = (await res.json()) as {
+            capturedAt: string;
+            details: ScreenDetails;
+          };
+          setScreenDetails((prev) =>
+            new Map(prev).set(deviceId, {
+              capturedAt: payload.capturedAt ?? capturedAt ?? new Date().toISOString(),
+              details: payload.details,
+            }),
+          );
+          mergeCaptureTime(deviceId, {
+            detailsAt: payload.capturedAt ?? capturedAt ?? new Date().toISOString(),
+          });
+          clearDetailsTimer(deviceId);
+          stopCapturingDetails(deviceId);
+          setOpenDetailsId(deviceId);
+        } catch {
+          clearDetailsTimer(deviceId);
+          stopCapturingDetails(deviceId);
+        }
+      },
+    );
 
     connection.onreconnected(async () => {
       setIsConnected(true);
@@ -221,18 +368,65 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       connection.stop();
     };
-  }, [fetchScreensRest, clearCaptureTimer, stopCapturing]);
+  }, [
+    fetchScreensRest,
+    clearCaptureTimer,
+    stopCapturing,
+    mergeCaptureTime,
+    clearDetailsTimer,
+    stopCapturingDetails,
+  ]);
 
   useEffect(() => {
     const timers = captureTimersRef.current;
+    const detailsTimers = detailsTimersRef.current;
     const urls = screenshotUrlsRef.current;
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
+      detailsTimers.forEach((timer) => clearTimeout(timer));
+      detailsTimers.clear();
       urls.forEach((url) => URL.revokeObjectURL(url));
       urls.clear();
     };
   }, []);
+
+  // Ao montar, busca os timestamps do "último obtido" (print/detalhes) de cada
+  // tela — assim mostramos a última informação mesmo que o monitor não
+  // estivesse aberto quando a captura agendada chegou.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await requestAdminJson<
+          Array<{ deviceId: string; screenshotAt?: string | null; detailsAt?: string | null }>
+        >(
+          "/monitor/captures",
+          {
+            method: "GET",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
+          "getCaptures",
+        );
+        if (cancelled) return;
+        setCaptureTimes((prev) => {
+          const next = new Map(prev);
+          for (const c of data) {
+            next.set(c.deviceId, {
+              screenshotAt: c.screenshotAt ?? next.get(c.deviceId)?.screenshotAt,
+              detailsAt: c.detailsAt ?? next.get(c.deviceId)?.detailsAt,
+            });
+          }
+          return next;
+        });
+      } catch {
+        // silencioso
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   // Agrupar por slug
   const grouped = screens.reduce<Record<string, ScreenInfo[]>>((acc, s) => {
@@ -251,22 +445,42 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
     ...screens.map((s) => s.appVersion),
   ]);
 
+  // Marca otimisticamente uma ação como agendada (badge aparece na hora; o
+  // próximo snapshot do servidor confirma).
+  const setPendingFlag = useCallback(
+    (
+      deviceId: string,
+      key: "pendingRefresh" | "pendingScreenshot" | "pendingDetails",
+      value: boolean,
+    ) => {
+      setScreens((prev) =>
+        prev.map((s) =>
+          s.deviceId === deviceId ? { ...s, [key]: value } : s,
+        ),
+      );
+    },
+    [],
+  );
+
+  const authHeaders = (json = true) => ({
+    ...(json ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  });
+
   const handleForceRefresh = async (screen: ScreenInfo) => {
     const label = screen.connected ? "Enviado" : "Agendado";
     setRefreshingIds((prev) => new Map(prev).set(screen.deviceId, label));
     try {
-      await requestAdminJson(
+      const res = await requestAdminJson<{ queued?: boolean }>(
         "/monitor/force-refresh",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          headers: authHeaders(),
           body: JSON.stringify({ deviceId: screen.deviceId }),
         },
         "forceRefresh",
       );
+      if (res?.queued) setPendingFlag(screen.deviceId, "pendingRefresh", true);
     } catch {
       // silencioso
     } finally {
@@ -282,31 +496,72 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
 
   const handleRequestScreenshot = async (screen: ScreenInfo) => {
     const deviceId = screen.deviceId;
-    setCapturingIds((prev) => new Set(prev).add(deviceId));
-    clearCaptureTimer(deviceId);
-    captureTimersRef.current.set(
-      deviceId,
-      setTimeout(() => {
-        captureTimersRef.current.delete(deviceId);
-        stopCapturing(deviceId);
-      }, 15_000),
-    );
+    if (screen.connected) {
+      // Online: mostra spinner até o print chegar (ou expira em 15s).
+      setCapturingIds((prev) => new Set(prev).add(deviceId));
+      clearCaptureTimer(deviceId);
+      captureTimersRef.current.set(
+        deviceId,
+        setTimeout(() => {
+          captureTimersRef.current.delete(deviceId);
+          stopCapturing(deviceId);
+        }, 15_000),
+      );
+    }
     try {
-      await requestAdminJson(
+      const res = await requestAdminJson<{ queued?: boolean }>(
         "/monitor/request-screenshot",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          headers: authHeaders(),
           body: JSON.stringify({ deviceId }),
         },
         "requestScreenshot",
       );
+      if (res?.queued) {
+        // Offline — print agendado para a próxima reconexão.
+        setPendingFlag(deviceId, "pendingScreenshot", true);
+        clearCaptureTimer(deviceId);
+        stopCapturing(deviceId);
+      }
     } catch {
       clearCaptureTimer(deviceId);
       stopCapturing(deviceId);
+    }
+  };
+
+  const handleRequestDetails = async (screen: ScreenInfo) => {
+    const deviceId = screen.deviceId;
+    if (screen.connected) {
+      setCapturingDetailsIds((prev) => new Set(prev).add(deviceId));
+      clearDetailsTimer(deviceId);
+      detailsTimersRef.current.set(
+        deviceId,
+        setTimeout(() => {
+          detailsTimersRef.current.delete(deviceId);
+          stopCapturingDetails(deviceId);
+        }, 15_000),
+      );
+    }
+    try {
+      const res = await requestAdminJson<{ queued?: boolean }>(
+        "/monitor/request-details",
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ deviceId }),
+        },
+        "requestDetails",
+      );
+      if (res?.queued) {
+        // Offline — detalhes agendados para a próxima reconexão.
+        setPendingFlag(deviceId, "pendingDetails", true);
+        clearDetailsTimer(deviceId);
+        stopCapturingDetails(deviceId);
+      }
+    } catch {
+      clearDetailsTimer(deviceId);
+      stopCapturingDetails(deviceId);
     }
   };
 
@@ -396,6 +651,10 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                       const refreshLabel = refreshingIds.get(screen.deviceId);
                       const isRefreshing = refreshLabel !== undefined;
                       const isCapturing = capturingIds.has(screen.deviceId);
+                      const isCapturingDetails = capturingDetailsIds.has(screen.deviceId);
+                      const times = captureTimes.get(screen.deviceId);
+                      const hasScreenshot = screenshotUrls.has(screen.deviceId);
+                      const hasDetails = screenDetails.has(screen.deviceId);
                       return (
                         <div
                           key={screen.deviceId}
@@ -431,6 +690,16 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                                     Atualização agendada
                                   </span>
                                 )}
+                                {screen.pendingScreenshot && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700">
+                                    Print agendado
+                                  </span>
+                                )}
+                                {screen.pendingDetails && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-100 text-teal-700">
+                                    Detalhes agendados
+                                  </span>
+                                )}
                                 {outdated && (
                                   <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-orange-700">
                                     Desatualizada
@@ -451,6 +720,44 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                                 <p className="text-[10px] text-slate-400 font-mono">
                                   v: {new Date(screen.appVersion).toLocaleString("pt-BR")}
                                 </p>
+                              )}
+                              {(times?.screenshotAt || times?.detailsAt) && (
+                                <div className="mt-1 flex flex-col gap-0.5">
+                                  {times?.screenshotAt && (
+                                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                                      <ImageIcon className="w-3 h-3 text-purple-500" />
+                                      <span>
+                                        Último print {formatTimeAgo(times.screenshotAt)}
+                                      </span>
+                                      {hasScreenshot && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setOpenScreenshotId(screen.deviceId)}
+                                          className="text-purple-600 hover:underline font-medium"
+                                        >
+                                          ver
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                  {times?.detailsAt && (
+                                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                                      <Ruler className="w-3 h-3 text-teal-500" />
+                                      <span>
+                                        Últimos detalhes {formatTimeAgo(times.detailsAt)}
+                                      </span>
+                                      {hasDetails && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setOpenDetailsId(screen.deviceId)}
+                                          className="text-teal-600 hover:underline font-medium"
+                                        >
+                                          ver
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -511,17 +818,40 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={!online || isCapturing}
+                              disabled={isCapturing}
                               onClick={() => handleRequestScreenshot(screen)}
                               title={
                                 online
                                   ? "Capturar print da tela"
-                                  : "Tela offline — print indisponível"
+                                  : "Tela offline — o print será capturado quando ela reconectar"
                               }
                               className="text-xs h-11 sm:h-9 px-3 w-full sm:w-auto"
                             >
                               <Camera className={`w-4 h-4 mr-1.5 ${isCapturing ? "animate-pulse" : ""}`} />
-                              {isCapturing ? "Capturando" : "Print"}
+                              {isCapturing
+                                ? "Capturando"
+                                : online
+                                  ? "Print"
+                                  : "Agendar print"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isCapturingDetails}
+                              onClick={() => handleRequestDetails(screen)}
+                              title={
+                                online
+                                  ? "Coletar detalhes da tela (resolução, zoom, viewport)"
+                                  : "Tela offline — os detalhes serão coletados quando ela reconectar"
+                              }
+                              className="text-xs h-11 sm:h-9 px-3 w-full sm:w-auto"
+                            >
+                              <Ruler className={`w-4 h-4 mr-1.5 ${isCapturingDetails ? "animate-pulse" : ""}`} />
+                              {isCapturingDetails
+                                ? "Coletando"
+                                : online
+                                  ? "Detalhes"
+                                  : "Agendar detalhes"}
                             </Button>
                           </div>
                         </div>
@@ -549,6 +879,14 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                   <span className="font-mono text-xs text-slate-500">
                     {openScreenshotId.slice(0, 8)}...
                   </span>
+                  {captureTimes.get(openScreenshotId)?.screenshotAt && (
+                    <span className="block text-[11px] font-normal text-slate-400">
+                      Capturado em{" "}
+                      {new Date(
+                        captureTimes.get(openScreenshotId)!.screenshotAt!,
+                      ).toLocaleString("pt-BR")}
+                    </span>
+                  )}
                 </span>
                 <div className="flex items-center gap-2">
                   <a
@@ -576,6 +914,72 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                 className="w-full h-auto rounded-md border"
               />
             </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={openDetailsId !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenDetailsId(null);
+        }}
+      >
+        <DialogContent className="max-w-lg p-4">
+          {openDetailsId && screenDetails.get(openDetailsId) ? (
+            (() => {
+              const entry = screenDetails.get(openDetailsId)!;
+              const rows = formatScreenDetailRows(entry.details);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const ua = (entry.details as any)?.userAgent as string | undefined;
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <Ruler className="w-4 h-4 text-teal-600" />
+                        Detalhes da tela{" "}
+                        <span className="font-mono text-xs text-slate-500">
+                          {openDetailsId.slice(0, 8)}...
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+                        <Clock className="w-3 h-3" />
+                        Obtido em{" "}
+                        {new Date(entry.capturedAt).toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setOpenDetailsId(null)}
+                      className="h-9 px-3 text-xs"
+                    >
+                      <X className="w-4 h-4 mr-1.5" />
+                      Fechar
+                    </Button>
+                  </div>
+                  <div className="rounded-md border divide-y divide-slate-100">
+                    {rows.map((r) => (
+                      <div
+                        key={r.label}
+                        className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs"
+                      >
+                        <span className="text-slate-500">{r.label}</span>
+                        <span className="font-mono font-medium text-slate-800 text-right">
+                          {r.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {ua && (
+                    <div className="text-[10px] text-slate-400 break-all">
+                      <span className="font-medium text-slate-500">User-Agent:</span>{" "}
+                      {ua}
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           ) : null}
         </DialogContent>
       </Dialog>
