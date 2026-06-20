@@ -14,8 +14,9 @@ import {
   getCachedWeather,
   WeatherData,
 } from "@/services/weatherService";
-import { fetchNews, getCachedNews, NewsData } from "@/services/newsService";
+import { fetchNews, getCachedNews, NewsData, NewsItem } from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
+import { getTickerMensagens, TickerMensagem } from "@/services/tickerService";
 import { getPredio, OrientationMode, Predio, ScreenModules, DEFAULT_MODULES } from "@/services/predioService";
 import { getNoticiasInternas, NoticiaInterna } from "@/services/noticiaInternaService";
 
@@ -25,6 +26,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [tickerMensagens, setTickerMensagens] = useState<TickerMensagem[]>([]);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
   const [predio, setPredio] = useState<Predio | null>(null);
@@ -40,6 +42,7 @@ export function Dashboard() {
   useSignalR({
     slug: slug ?? "gramado",
     onAvisosReceived: (msgs) => setMessages(msgs),
+    onTickerMensagensReceived: (ms) => setTickerMensagens(ms),
     onOrientationReceived: (mode) => {
       setOrientationMode((prev) => {
         if (prev !== mode) {
@@ -91,6 +94,12 @@ export function Dashboard() {
         }
       } catch (err) {
         console.error("Erro ao carregar mensagens:", err);
+      }
+      try {
+        const ticker = await getTickerMensagens(slug ?? "gramado");
+        setTickerMensagens(ticker);
+      } catch (err) {
+        console.error("Erro ao carregar ticker:", err);
       }
     };
     loadInitial();
@@ -192,6 +201,11 @@ export function Dashboard() {
   const showNews = modules.headlineNews;
   const showNewsTicker = modules.newsTicker;
 
+  const tickerItems =
+    tickerMensagens.length > 0
+      ? tickerMensagens.map((m) => ({ title: m.texto } as NewsItem))
+      : (newsData?.items ?? []);
+
   return (
     <div className="elevator-screen h-screen w-screen overflow-hidden" style={{ height: "100dvh" }}>
       <div className="elevator-rotate">
@@ -236,7 +250,7 @@ export function Dashboard() {
           </div>
 
           {/* Ticker de notícias no rodapé */}
-          <NewsTicker items={newsData?.items ?? []} visible={showNewsTicker} />
+          <NewsTicker items={tickerItems} visible={showNewsTicker} />
 
           <div
             className="absolute right-4 z-20 pointer-events-none"

@@ -10,6 +10,7 @@ import {
   NewsSourcesCard,
   NoticiaInternaCard,
   MessagesSection,
+  TickerSection,
 } from "@/components/admin";
 
 function getRoleFromToken(token: string | null): string | null {
@@ -93,6 +94,7 @@ export function Admin() {
       <NewsSourcesCard slug={resolvedSlug} token={token} isDeveloper={isDeveloper} />
       <NoticiaInternaCard slug={resolvedSlug} token={token} />
       <MessagesSection slug={resolvedSlug} token={token} />
+      <TickerSection slug={resolvedSlug} token={token} />
     </div>
   );
 }

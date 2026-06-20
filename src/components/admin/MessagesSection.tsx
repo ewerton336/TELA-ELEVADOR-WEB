@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -174,8 +180,7 @@ export function MessagesSection({ slug, token }: MessagesSectionProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-      {/* Lista de mensagens */}
+    <div>
       <MessageList
         messages={messages}
         editingId={editingId}
@@ -184,31 +189,45 @@ export function MessagesSection({ slug, token }: MessagesSectionProps) {
         onDelete={handleDelete}
       />
 
-      {/* Formulário de edição */}
-      <MessageForm
-        isAdding={isAdding}
-        editingId={editingId}
-        formTitle={formTitle}
-        setFormTitle={setFormTitle}
-        formContent={formContent}
-        setFormContent={setFormContent}
-        formPriority={formPriority}
-        setFormPriority={setFormPriority}
-        formActive={formActive}
-        setFormActive={setFormActive}
-        onSave={handleSave}
-        onCancel={resetForm}
-        onApplyFormatting={applyFormatting}
-      />
+      <Dialog
+        open={isAdding || editingId !== null}
+        onOpenChange={(open) => {
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent className="glass-card border-white/20 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white text-sm">
+              {isAdding ? "Novo Recado" : "Editar Recado"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <MessageForm
+              isAdding={isAdding}
+              editingId={editingId}
+              formTitle={formTitle}
+              setFormTitle={setFormTitle}
+              formContent={formContent}
+              setFormContent={setFormContent}
+              formPriority={formPriority}
+              setFormPriority={setFormPriority}
+              formActive={formActive}
+              setFormActive={setFormActive}
+              onSave={handleSave}
+              onCancel={resetForm}
+              onApplyFormatting={applyFormatting}
+            />
 
-      {/* Pré-visualização */}
-      <MessagePreview
-        isAdding={isAdding}
-        editingId={editingId}
-        formTitle={formTitle}
-        formContent={formContent}
-        formPriority={formPriority}
-      />
+            <MessagePreview
+              isAdding={isAdding}
+              editingId={editingId}
+              formTitle={formTitle}
+              formContent={formContent}
+              formPriority={formPriority}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -333,8 +352,6 @@ function MessageList({
 
 /** Form for editing/adding a message */
 function MessageForm({
-  isAdding,
-  editingId,
   formTitle,
   setFormTitle,
   formContent,
@@ -362,19 +379,7 @@ function MessageForm({
   onApplyFormatting: (tag: string) => void;
 }) {
   return (
-    <GlassCard>
-      <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
-        <CardTitle className="text-white text-sm">
-          {isAdding
-            ? "Novo Recado"
-            : editingId
-              ? "Editar Recado"
-              : "Selecione um Recado"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-        {isAdding || editingId ? (
-          <div className="space-y-3">
+    <div className="space-y-3">
             <FormField
               id="title"
               label="Título"
@@ -487,23 +492,12 @@ function MessageForm({
                 Cancelar
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-white/40">
-            <Pencil className="w-8 h-8 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">Clique em um recado para editar</p>
-            <p className="text-xs">ou adicione um novo</p>
-          </div>
-        )}
-      </CardContent>
-    </GlassCard>
+    </div>
   );
 }
 
 /** Live preview of the message being edited */
 function MessagePreview({
-  isAdding,
-  editingId,
   formTitle,
   formContent,
   formPriority,
@@ -515,15 +509,13 @@ function MessagePreview({
   formPriority: MessagePriority;
 }) {
   return (
-    <GlassCard>
-      <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
-        <CardTitle className="text-white flex items-center gap-2 text-sm">
-          <Eye className="w-4 h-4" />
-          Pré-visualização
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-        {(isAdding || editingId) && (formTitle || formContent) ? (
+    <div className="space-y-2">
+      <div className="text-white flex items-center gap-2 text-sm font-semibold">
+        <Eye className="w-4 h-4" />
+        Pré-visualização
+      </div>
+      <div>
+        {formTitle || formContent ? (
           <div
             className={`h-[250px] sm:h-[400px] rounded-lg overflow-hidden ${
               formPriority === "urgent"
@@ -577,7 +569,7 @@ function MessagePreview({
             </div>
           </div>
         )}
-      </CardContent>
-    </GlassCard>
+      </div>
+    </div>
   );
 }

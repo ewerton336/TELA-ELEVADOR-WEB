@@ -208,7 +208,7 @@
 .force-portrait .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(380px, 32vh) 1fr;
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--dash-gap);
 }
 
@@ -237,7 +237,7 @@
 @media (orientation: portrait) {
   .dashboard-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(380px, 32vh) 1fr;
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .dashboard-header {
@@ -566,13 +566,13 @@ html.perf-mode .internal-news-overlay {
 .news-ticker-track {
   display: flex;
   white-space: nowrap;
-  animation: ticker-scroll 45s linear infinite;
+  animation: ticker-scroll 60s linear infinite;
 }
 
 .news-ticker-content {
   flex-shrink: 0;
   padding-left: 2rem;
-  font-size: var(--fs-meta);
+  font-size: calc(var(--fs-meta) * 1.25);
   color: rgba(255,255,255,0.9);
 }
 

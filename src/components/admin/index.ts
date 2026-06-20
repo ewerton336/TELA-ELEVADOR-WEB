@@ -5,3 +5,4 @@ export { ScreenModulesCard } from "./ScreenModulesCard";
 export { NewsSourcesCard } from "./NewsSourcesCard";
 export { NoticiaInternaCard } from "./NoticiaInternaCard";
 export { MessagesSection } from "./MessagesSection";
+export { TickerSection } from "./TickerSection";

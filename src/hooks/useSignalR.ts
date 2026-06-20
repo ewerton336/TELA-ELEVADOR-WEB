@@ -6,15 +6,17 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { getMessages, Message } from "@/services/messageService";
+import { getTickerMensagens, TickerMensagem } from "@/services/tickerService";
 import { getPredio, OrientationMode, ScreenModules } from "@/services/predioService";
 import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaService";
-import { getPredioHubUrl } from "@/lib/backendUrl";
+import { getPredioHubUrl, buildBackendUrl } from "@/lib/backendUrl";
 import { getScreenDeviceId } from "@/lib/screenDeviceId";
 import { setCache } from "@/lib/cache";
 
 interface UseSignalROptions {
   slug: string;
   onAvisosReceived: (messages: Message[]) => void;
+  onTickerMensagensReceived?: (mensagens: TickerMensagem[]) => void;
   onOrientationReceived: (mode: OrientationMode) => void;
   onNoticiasInternasReceived?: (noticias: NoticiaInterna[]) => void;
   onModulesReceived?: (modules: ScreenModules) => void;
@@ -23,6 +25,7 @@ interface UseSignalROptions {
 export function useSignalR({
   slug,
   onAvisosReceived,
+  onTickerMensagensReceived,
   onOrientationReceived,
   onNoticiasInternasReceived,
   onModulesReceived,
@@ -36,6 +39,8 @@ export function useSignalR({
   // Refs para callbacks (evita que mudança de callback reconecte o hub)
   const onAvisosRef = useRef(onAvisosReceived);
   onAvisosRef.current = onAvisosReceived;
+  const onTickerMensagensRef = useRef(onTickerMensagensReceived);
+  onTickerMensagensRef.current = onTickerMensagensReceived;
   const onOrientationRef = useRef(onOrientationReceived);
   onOrientationRef.current = onOrientationReceived;
   const onNoticiasInternasRef = useRef(onNoticiasInternasReceived);
@@ -81,6 +86,12 @@ export function useSignalR({
         // silencioso — sem rede
       }
       try {
+        const ticker = await getTickerMensagens(slug);
+        onTickerMensagensRef.current?.(ticker);
+      } catch {
+        void 0;
+      }
+      try {
         const predioData = await getPredio(slug);
         const mode = predioData.orientationMode ?? "auto";
         onOrientationRef.current(mode);
@@ -106,6 +117,12 @@ export function useSignalR({
       if (msgs) onAvisosRef.current(msgs);
     } catch {
       // silencioso
+    }
+    try {
+      const ticker = await getTickerMensagens(slug);
+      onTickerMensagensRef.current?.(ticker);
+    } catch {
+      void 0;
     }
     try {
       const predioData = await getPredio(slug);
@@ -175,6 +192,14 @@ export function useSignalR({
       }
     });
 
+    connection.on("ReceiveTickerMensagens", (data: unknown) => {
+      if (Array.isArray(data)) {
+        console.log("[SignalR] Ticker mensagens recebidas:", data.length);
+        setCache(`ticker:${slug}`, data, 24 * 60);
+        onTickerMensagensRef.current?.(data as TickerMensagem[]);
+      }
+    });
+
     connection.on("ReceiveOrientation", (mode: string) => {
       console.log("[SignalR] Orientação recebida:", mode);
       onOrientationRef.current(mode as OrientationMode);
@@ -198,6 +223,32 @@ export function useSignalR({
     connection.on("ForceRefresh", () => {
       console.log("[SignalR] ForceRefresh recebido — recarregando página");
       window.location.reload();
+    });
+
+    connection.on("RequestScreenshot", async () => {
+      try {
+        const html2canvas = (await import("html2canvas")).default;
+        const el =
+          (document.querySelector(".elevator-screen") as HTMLElement) ??
+          document.body;
+        const canvas = await html2canvas(el, {
+          useCORS: true,
+          backgroundColor: "#0f172a",
+          logging: false,
+          scale: 1,
+        });
+        const dataUrl = canvas.toDataURL("image/png");
+        await fetch(buildBackendUrl("/api/admin/monitor/screenshot-data"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deviceId: getScreenDeviceId(),
+            imageBase64: dataUrl,
+          }),
+        });
+      } catch {
+        void 0;
+      }
     });
 
     // --- Handlers de conexão ---

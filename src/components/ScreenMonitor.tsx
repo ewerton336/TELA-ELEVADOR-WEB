@@ -6,10 +6,11 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { requestAdminJson } from "@/services/apiClient";
-import { getPredioHubUrl } from "@/lib/backendUrl";
+import { getPredioHubUrl, buildBackendUrl } from "@/lib/backendUrl";
 import { computeLatestVersion, isScreenOutdated } from "@/lib/screenVersion";
 
 interface ScreenInfo {
@@ -54,8 +55,32 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const [isLoading, setIsLoading] = useState(true);
   // deviceIds com comando de atualização em andamento → "Enviado" | "Agendado"
   const [refreshingIds, setRefreshingIds] = useState<Map<string, string>>(new Map());
+  const [capturingIds, setCapturingIds] = useState<Set<string>>(new Set());
+  const [screenshotUrls, setScreenshotUrls] = useState<Map<string, string>>(new Map());
+  const [openScreenshotId, setOpenScreenshotId] = useState<string | null>(null);
   const connectionRef = useRef<HubConnection | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const captureTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const screenshotUrlsRef = useRef<Map<string, string>>(new Map());
+
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
+  const clearCaptureTimer = useCallback((deviceId: string) => {
+    const timer = captureTimersRef.current.get(deviceId);
+    if (timer) {
+      clearTimeout(timer);
+      captureTimersRef.current.delete(deviceId);
+    }
+  }, []);
+
+  const stopCapturing = useCallback((deviceId: string) => {
+    setCapturingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(deviceId);
+      return next;
+    });
+  }, []);
 
   // Força re-render a cada 10s para atualizar "time ago"
   const [, setTick] = useState(0);
@@ -135,6 +160,32 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
       },
     );
 
+    connection.on("ScreenshotReady", async ({ deviceId }: { deviceId: string }) => {
+      try {
+        const res = await fetch(
+          buildBackendUrl(`/api/admin/monitor/screenshot/${deviceId}`),
+          {
+            headers: tokenRef.current
+              ? { Authorization: `Bearer ${tokenRef.current}` }
+              : {},
+          },
+        );
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const previous = screenshotUrlsRef.current.get(deviceId);
+        if (previous) URL.revokeObjectURL(previous);
+        screenshotUrlsRef.current.set(deviceId, url);
+        setScreenshotUrls((prev) => new Map(prev).set(deviceId, url));
+        clearCaptureTimer(deviceId);
+        stopCapturing(deviceId);
+        setOpenScreenshotId(deviceId);
+      } catch {
+        clearCaptureTimer(deviceId);
+        stopCapturing(deviceId);
+      }
+    });
+
     connection.onreconnected(async () => {
       setIsConnected(true);
       await connection.invoke("JoinMonitor");
@@ -170,7 +221,18 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       connection.stop();
     };
-  }, [fetchScreensRest]);
+  }, [fetchScreensRest, clearCaptureTimer, stopCapturing]);
+
+  useEffect(() => {
+    const timers = captureTimersRef.current;
+    const urls = screenshotUrlsRef.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.clear();
+    };
+  }, []);
 
   // Agrupar por slug
   const grouped = screens.reduce<Record<string, ScreenInfo[]>>((acc, s) => {
@@ -215,6 +277,36 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
           return next;
         });
       }, 2000);
+    }
+  };
+
+  const handleRequestScreenshot = async (screen: ScreenInfo) => {
+    const deviceId = screen.deviceId;
+    setCapturingIds((prev) => new Set(prev).add(deviceId));
+    clearCaptureTimer(deviceId);
+    captureTimersRef.current.set(
+      deviceId,
+      setTimeout(() => {
+        captureTimersRef.current.delete(deviceId);
+        stopCapturing(deviceId);
+      }, 15_000),
+    );
+    try {
+      await requestAdminJson(
+        "/monitor/request-screenshot",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ deviceId }),
+        },
+        "requestScreenshot",
+      );
+    } catch {
+      clearCaptureTimer(deviceId);
+      stopCapturing(deviceId);
     }
   };
 
@@ -303,6 +395,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                       const outdated = isScreenOutdated(screen.appVersion, latestVersion);
                       const refreshLabel = refreshingIds.get(screen.deviceId);
                       const isRefreshing = refreshLabel !== undefined;
+                      const isCapturing = capturingIds.has(screen.deviceId);
                       return (
                         <div
                           key={screen.deviceId}
@@ -415,6 +508,21 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                                   ? "Atualizar"
                                   : "Agendar"}
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!online || isCapturing}
+                              onClick={() => handleRequestScreenshot(screen)}
+                              title={
+                                online
+                                  ? "Capturar print da tela"
+                                  : "Tela offline — print indisponível"
+                              }
+                              className="text-xs h-11 sm:h-9 px-3 w-full sm:w-auto"
+                            >
+                              <Camera className={`w-4 h-4 mr-1.5 ${isCapturing ? "animate-pulse" : ""}`} />
+                              {isCapturing ? "Capturando" : "Print"}
+                            </Button>
                           </div>
                         </div>
                       );
@@ -425,6 +533,52 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
             ))}
         </div>
       )}
+
+      <Dialog
+        open={openScreenshotId !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenScreenshotId(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl p-3">
+          {openScreenshotId && screenshotUrls.get(openScreenshotId) ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  Print da tela{" "}
+                  <span className="font-mono text-xs text-slate-500">
+                    {openScreenshotId.slice(0, 8)}...
+                  </span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={screenshotUrls.get(openScreenshotId)}
+                    download={`print-${openScreenshotId.slice(0, 8)}.png`}
+                    className="inline-flex items-center gap-1.5 rounded-md border px-3 h-9 text-xs font-medium hover:bg-slate-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    Baixar
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setOpenScreenshotId(null)}
+                    className="h-9 px-3 text-xs"
+                  >
+                    <X className="w-4 h-4 mr-1.5" />
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+              <img
+                src={screenshotUrls.get(openScreenshotId)}
+                alt="Print da tela do elevador"
+                className="w-full h-auto rounded-md border"
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

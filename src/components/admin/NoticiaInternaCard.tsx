@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/FormField";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -176,30 +182,41 @@ export function NoticiaInternaCard({ slug, token }: NoticiaInternaCardProps) {
           notícias externas no carrossel.
         </p>
 
-        {/* Form to add/edit internal news */}
-        {(isAdding || editingId !== null) && (
-          <NoticiaInternaForm
-            isAdding={isAdding}
-            titulo={titulo}
-            setTitulo={setTitulo}
-            subtitulo={subtitulo}
-            setSubtitulo={setSubtitulo}
-            inicioEm={inicioEm}
-            setInicioEm={setInicioEm}
-            fimEm={fimEm}
-            setFimEm={setFimEm}
-            ativo={ativo}
-            setAtivo={setAtivo}
-            saving={saving}
-            previewUrl={previewUrl}
-            arquivo={arquivo}
-            editingId={editingId}
-            noticiasInternas={noticiasInternas}
-            onFileChange={handleFileChange}
-            onSave={handleSave}
-            onCancel={resetForm}
-          />
-        )}
+        <Dialog
+          open={isAdding || editingId !== null}
+          onOpenChange={(open) => {
+            if (!open) resetForm();
+          }}
+        >
+          <DialogContent className="glass-card border-white/20 max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-white text-sm">
+                {isAdding ? "Nova Notícia" : "Editar Notícia"}
+              </DialogTitle>
+            </DialogHeader>
+            <NoticiaInternaForm
+              isAdding={isAdding}
+              titulo={titulo}
+              setTitulo={setTitulo}
+              subtitulo={subtitulo}
+              setSubtitulo={setSubtitulo}
+              inicioEm={inicioEm}
+              setInicioEm={setInicioEm}
+              fimEm={fimEm}
+              setFimEm={setFimEm}
+              ativo={ativo}
+              setAtivo={setAtivo}
+              saving={saving}
+              previewUrl={previewUrl}
+              arquivo={arquivo}
+              editingId={editingId}
+              noticiasInternas={noticiasInternas}
+              onFileChange={handleFileChange}
+              onSave={handleSave}
+              onCancel={resetForm}
+            />
+          </DialogContent>
+        </Dialog>
 
         {/* List of internal news */}
         {noticiasInternas.length > 0 ? (
@@ -271,10 +288,7 @@ function NoticiaInternaForm({
   onCancel: () => void;
 }) {
   return (
-    <div className="border border-white/20 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 bg-white/5">
-      <h3 className="text-white text-sm font-semibold mb-3">
-        {isAdding ? "Nova Notícia" : "Editar Notícia"}
-      </h3>
+    <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-3">
           <FormField
