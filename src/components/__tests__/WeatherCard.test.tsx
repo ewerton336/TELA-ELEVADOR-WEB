@@ -65,10 +65,11 @@ describe("WeatherCard — clima atual (modo padrão)", () => {
 
   it("deve renderizar ícone animado do tempo de hoje", () => {
     render(<WeatherCard data={makeWeatherData()} />);
-    // O ícone agora é um SVG animado (img) com a descrição como alt.
-    const icon = screen.getByAltText("Céu limpo");
-    expect(icon).toBeInTheDocument();
-    expect(icon).toHaveAttribute("src", "/weather/clear-day.svg");
+    // O ícone é um SVG animado inline (role="img") com a descrição como nome
+    // acessível; em ambiente de teste cai no fallback, mas o papel se mantém.
+    expect(
+      screen.getByRole("img", { name: "Céu limpo" }),
+    ).toBeInTheDocument();
   });
 
   it("deve renderizar descrição do tempo de hoje", () => {
@@ -92,9 +93,9 @@ describe("WeatherCard — lista de dias", () => {
 
   it("deve renderizar ícone animado e temperaturas do segundo dia", () => {
     render(<WeatherCard data={makeWeatherData()} />);
-    const icon = screen.getByAltText("Parcialmente nublado");
-    expect(icon).toBeInTheDocument();
-    expect(icon).toHaveAttribute("src", "/weather/partly-cloudy-day.svg");
+    expect(
+      screen.getByRole("img", { name: "Parcialmente nublado" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("24°")).toBeInTheDocument();
     expect(screen.getByText("16°")).toBeInTheDocument();
   });

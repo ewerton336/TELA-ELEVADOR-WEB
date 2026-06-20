@@ -25,6 +25,7 @@ import {
   Upload,
 } from "lucide-react";
 import { formatDateShort } from "@/lib/dateFormatter";
+import { InternalNewsSlide } from "@/components/NewsCarousel";
 import { toast } from "sonner";
 import {
   type NoticiaInterna,
@@ -327,7 +328,7 @@ function NoticiaInternaForm({
           <div className="grid grid-cols-2 gap-2">
             <FormField
               id="ni-inicio"
-              label="Início em"
+              label="Início em (opcional)"
               dark
               type="datetime-local"
               value={inicioEm}
@@ -336,7 +337,7 @@ function NoticiaInternaForm({
             />
             <FormField
               id="ni-fim"
-              label="Fim em"
+              label="Fim em (opcional)"
               dark
               type="datetime-local"
               value={fimEm}
@@ -344,6 +345,9 @@ function NoticiaInternaForm({
               className="text-xs"
             />
           </div>
+          <p className="text-white/30 text-[10px] -mt-1">
+            Início em branco: aparece imediatamente. Fim em branco: não expira.
+          </p>
           {editingId !== null && (
             <div className="flex items-center gap-2">
               <label className="relative inline-flex items-center cursor-pointer">
@@ -386,49 +390,46 @@ function NoticiaInternaForm({
             </Button>
           </div>
         </div>
-        {/* Preview */}
-        <div className="flex items-center justify-center">
-          {previewUrl ? (
-            arquivo?.type.startsWith("video/") ? (
-              <video
-                src={previewUrl}
-                controls
-                className="max-h-[240px] rounded-lg w-full object-contain bg-black"
-              />
-            ) : (
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="max-h-[240px] rounded-lg object-contain"
-              />
-            )
-          ) : editingId !== null ? (
-            (() => {
-              const editing = noticiasInternas.find(
-                (n) => n.id === editingId,
-              );
-              if (!editing) return null;
-              return editing.tipoMidia === "video" ? (
-                <video
-                  src={editing.mediaUrl}
-                  controls
-                  className="max-h-[240px] rounded-lg w-full object-contain bg-black"
+        {/* Preview — como a notícia aparece na tela do elevador */}
+        <div className="flex flex-col">
+          <p className="text-white/50 text-[11px] mb-1 flex items-center gap-1">
+            <Eye className="w-3 h-3" /> Pré-visualização (como aparece na tela)
+          </p>
+          {(() => {
+            const editing =
+              editingId !== null
+                ? noticiasInternas.find((n) => n.id === editingId)
+                : undefined;
+            const mediaUrl = previewUrl ?? editing?.mediaUrl ?? "";
+            const tipoMidia: "imagem" | "video" = arquivo
+              ? arquivo.type.startsWith("video/")
+                ? "video"
+                : "imagem"
+              : (editing?.tipoMidia ?? "imagem");
+            const item: NoticiaInterna = {
+              id: editingId ?? -1,
+              titulo: titulo.trim() || null,
+              subtitulo: subtitulo.trim() || null,
+              tipoMidia,
+              mediaUrl,
+              ativo: true,
+              criadoEm: new Date().toISOString(),
+            };
+            return (
+              <div className="aspect-video w-full rounded-lg overflow-hidden border border-white/10 bg-slate-900 shadow-inner">
+                <InternalNewsSlide
+                  item={item}
+                  isActive={false}
+                  onVideoEnded={() => {}}
                 />
-              ) : (
-                <img
-                  src={editing.mediaUrl}
-                  alt="Atual"
-                  className="max-h-[240px] rounded-lg object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              );
-            })()
-          ) : (
-            <div className="text-white/30 text-center p-8">
-              <Upload className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">Selecione um arquivo para preview</p>
-            </div>
+              </div>
+            );
+          })()}
+          {!previewUrl && editingId === null && (
+            <p className="text-white/30 text-[10px] mt-1 flex items-center gap-1">
+              <Upload className="w-3 h-3" /> Selecione um arquivo para ver a
+              mídia no preview.
+            </p>
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Dashboard } from "@/pages/Dashboard";
 import { Admin } from "@/pages/Admin";
 import Master from "@/pages/Master";
+import Preview from "@/pages/Preview";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/gramado" replace />} />
+          <Route path="/preview" element={<Preview />} />
+          <Route path="/preview/:slug" element={<Preview />} />
           <Route path="/:slug" element={<Dashboard />} />
           <Route path="/:slug/admin" element={<Admin />} />
           <Route path="/master" element={<Master />} />

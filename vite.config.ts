@@ -19,6 +19,10 @@ export default defineConfig({
   server: {
     host: "::",
     port: 3000,
+    // Abre automaticamente a pré-visualização na resolução do elevador
+    // (960×540), para o dev ver a tela igual à de produção mesmo num monitor
+    // maior. Sobrescreva com VITE_OPEN_PATH se quiser outra rota/slug.
+    open: process.env.VITE_OPEN_PATH ?? "/preview/gramado",
     proxy,
   },
   preview: {

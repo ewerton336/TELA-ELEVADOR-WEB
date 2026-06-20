@@ -28,8 +28,8 @@ function ForecastRow({
         weatherCode={day.weatherCode}
         fallbackEmoji={day.weatherIcon}
         alt={day.weatherDescription}
-        sizeClass="w-9 h-9"
-        className="weather-icon text-2xl"
+        sizePx={36}
+        className="weather-icon"
       />
 
       <div className="flex flex-col min-w-0 flex-1">
@@ -95,8 +95,7 @@ export const WeatherCard = memo(function WeatherCard({
               weatherCode={today.weatherCode}
               fallbackEmoji={today.weatherIcon}
               alt={today.weatherDescription}
-              sizeClass="w-8 h-8"
-              className="text-2xl"
+              sizePx={32}
             />
             <div className="flex flex-col leading-none">
               <span className="text-white/60 text-xs font-medium uppercase">Hoje</span>
@@ -118,8 +117,7 @@ export const WeatherCard = memo(function WeatherCard({
                 weatherCode={data.days[1].weatherCode}
                 fallbackEmoji={data.days[1].weatherIcon}
                 alt={data.days[1].weatherDescription}
-                sizeClass="w-8 h-8"
-                className="text-2xl"
+                sizePx={32}
               />
               <div className="flex flex-col leading-none">
                 <span className="text-white/50 text-xs font-medium uppercase">Amanhã</span>

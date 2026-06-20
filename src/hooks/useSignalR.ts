@@ -310,10 +310,15 @@ export function useSignalR({
           (document.querySelector(".elevator-screen") as HTMLElement) ??
           document.body;
         const canvas = await html2canvas(el, {
-          useCORS: true,
           backgroundColor: "#0f172a",
           logging: false,
           scale: 1,
+          // Imagens cross-origin (ex.: fotos de notícias do G1) não enviam CORS
+          // e sairiam em branco no print. Com useCORS=false + proxy, o
+          // html2canvas busca essas imagens pelo proxy do backend (same-origin).
+          useCORS: false,
+          proxy: buildBackendUrl("/api/media/proxy"),
+          imageTimeout: 15000,
         });
         const dataUrl = canvas.toDataURL("image/png");
         await fetch(buildBackendUrl("/api/admin/monitor/screenshot-data"), {

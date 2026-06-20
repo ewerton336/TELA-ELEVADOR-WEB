@@ -6,3 +6,7 @@ dist/
 .env.*
 .DS_Store
 deploy.tar.gz
+test-results/
+playwright-report/
+.vitest-out.json
+.playwright-mcp/
