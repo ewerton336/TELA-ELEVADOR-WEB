@@ -5,14 +5,16 @@ import { useParams } from "react-router-dom";
  * Pré-visualização da tela do elevador na MESMA resolução do dispositivo de
  * produção (960×540 CSS px), independente do tamanho do monitor do dev.
  *
- * A tela é renderizada dentro de um <iframe> de 960×540 — assim o app enxerga
- * window.innerWidth/innerHeight = 960×540 (igual ao elevador), e podemos
- * escalar visualmente (1× / 1.5× / 2×) para imitar o painel físico 1920×1080
- * (que roda com devicePixelRatio 2).
+ * A tela roda dentro de um <iframe> de 960×540 e usamos a propriedade CSS
+ * `zoom` (não `transform: scale`) para ampliar. O `zoom` RE-RASTERIZA o
+ * conteúdo (fica nítido) e, dentro do iframe, mantém window.innerWidth=960,
+ * innerHeight=540 e devicePixelRatio=2 — emulando exatamente o dispositivo do
+ * elevador (960 CSS @ 2×). O `transform: scale` apenas esticava o raster
+ * (borrado).
  *
- * - Quando a escala deixa o conteúdo maior que a janela, a página rola.
- * - "Tela cheia" usa a Fullscreen API e escala o iframe para preencher o
- *   monitor (num Full HD = 2×, ficando 1920×1080, idêntico ao painel real).
+ * - Botões 1× / 1.5× / 2× mudam o tamanho exibido.
+ * - Quando o conteúdo passa da janela, a página rola.
+ * - "Tela cheia" preenche o monitor (num Full HD = 2× = 1920×1080).
  */
 const BASE_W = 960;
 const BASE_H = 540;
@@ -34,8 +36,6 @@ export default function Preview() {
       const active = document.fullscreenElement === frameRef.current;
       setIsFullscreen(active);
       if (active) {
-        // Em tela cheia a janela cobre o monitor: escala para preencher
-        // mantendo 16:9 (FHD → 2×, sem barras).
         setFsScale(
           Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H),
         );
@@ -57,10 +57,29 @@ export default function Preview() {
   };
 
   const effectiveScale = isFullscreen ? fsScale : scale;
+  const dispW = Math.round(BASE_W * effectiveScale);
+  const dispH = Math.round(BASE_H * effectiveScale);
+
+  const iframe = (
+    <iframe
+      key={currentSlug}
+      title="Tela do elevador (preview)"
+      src={`/${currentSlug}`}
+      style={{
+        width: BASE_W,
+        height: BASE_H,
+        // `zoom` (não `transform`) re-rasteriza nítido E mantém innerWidth=960
+        // + devicePixelRatio=2 dentro do iframe, emulando o dispositivo.
+        zoom: effectiveScale,
+        border: 0,
+        display: "block",
+      }}
+    />
+  );
 
   return (
-    // Container rolável: usar overflow:auto + margin:auto no conteúdo (em vez de
-    // flex center, que cortaria o topo/esquerda sem permitir scroll).
+    // Container rolável: overflow:auto + margin:auto no conteúdo (em vez de flex
+    // center, que cortaria o topo/esquerda sem permitir scroll).
     <div
       style={{
         height: "100vh",
@@ -83,8 +102,8 @@ export default function Preview() {
         <div style={{ color: "#cbd5e1", fontSize: 13, textAlign: "center" }}>
           <strong>Pré-visualização — resolução do elevador</strong>
           <div style={{ color: "#7c8aa5", marginTop: 2 }}>
-            {BASE_W}×{BASE_H} CSS px · escala {scale}× (painel físico{" "}
-            {BASE_W * scale}×{BASE_H * scale}) · slug: <code>{currentSlug}</code>
+            {BASE_W}×{BASE_H} CSS px · escala {scale}× ({dispW}×{dispH}) · slug:{" "}
+            <code>{currentSlug}</code>
           </div>
         </div>
 
@@ -169,8 +188,7 @@ export default function Preview() {
         </div>
 
         {/* "Painel" do elevador. Em tela cheia, vira o elemento fullscreen e
-            preenche o monitor; fora dela, é a caixa 960×540 escalada (sem
-            maxWidth, para que ao escalar possa exceder a janela e rolar). */}
+            preenche o monitor; fora dela, é a caixa do tamanho exibido. */}
         <div
           ref={frameRef}
           style={
@@ -183,10 +201,11 @@ export default function Preview() {
                   alignItems: "center",
                   justifyContent: "center",
                   overflow: "hidden",
+                  position: "relative",
                 }
               : {
-                  width: BASE_W * scale,
-                  height: BASE_H * scale,
+                  width: dispW,
+                  height: dispH,
                   flexShrink: 0,
                   borderRadius: 10,
                   overflow: "hidden",
@@ -195,20 +214,7 @@ export default function Preview() {
                 }
           }
         >
-          <iframe
-            key={`${currentSlug}`}
-            title="Tela do elevador (preview)"
-            src={`/${currentSlug}`}
-            style={{
-              width: BASE_W,
-              height: BASE_H,
-              border: 0,
-              transform: `scale(${effectiveScale})`,
-              transformOrigin: isFullscreen ? "center center" : "top left",
-              display: "block",
-              flexShrink: 0,
-            }}
-          />
+          {iframe}
 
           {isFullscreen && (
             <button
