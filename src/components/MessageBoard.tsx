@@ -13,15 +13,24 @@ function useFitText(content: string) {
     const el = ref.current;
     const box = el?.parentElement;
     if (!el || !box) return;
-    el.style.fontSize = "";
-    let size = parseFloat(getComputedStyle(el).fontSize) || 22;
-    const min = 12;
-    let guard = 0;
-    while (size > min && box.scrollHeight > box.clientHeight && guard < 60) {
-      size -= 1;
-      el.style.fontSize = `${size}px`;
-      guard += 1;
+    const fit = () => {
+      el.style.fontSize = "";
+      let size = parseFloat(getComputedStyle(el).fontSize) || 22;
+      const min = 12;
+      let guard = 0;
+      while (size > min && box.scrollHeight > box.clientHeight && guard < 80) {
+        size -= 1;
+        el.style.fontSize = `${size}px`;
+        guard += 1;
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(() => fit());
+    ro.observe(box);
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(fit).catch(() => void 0);
     }
+    return () => ro.disconnect();
   }, [content]);
   return ref;
 }
@@ -201,11 +210,10 @@ function NormalCard({
   const contentRef = useFitText(message.content);
   return (
     <div className="msg-card h-full flex flex-col rounded-2xl border border-white/10 bg-slate-800/40 overflow-hidden">
-      {/* Bloco 1 — Tipo + data/hora + contador */}
-      <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4 flex-shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-lg bg-orange-500/25 flex items-center justify-center flex-shrink-0">
-            <MessageSquare className="w-6 h-6 text-orange-300" />
+      <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-2 flex-shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-orange-500/25 flex items-center justify-center flex-shrink-0">
+            <MessageSquare className="w-4 h-4 text-orange-300" />
           </div>
           <span className="text-fs-meta font-bold uppercase tracking-widest text-orange-300 truncate">
             Aviso do síndico
@@ -255,10 +263,10 @@ function UrgentCard({
   const contentRef = useFitText(message.content);
   return (
     <div className="msg-card msg-card--urgent h-full flex flex-col rounded-2xl border-2 border-red-500 bg-red-950/85 overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4 flex-shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-lg bg-red-500/30 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-6 h-6 text-red-200" />
+      <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-2 flex-shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-red-500/30 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-4 h-4 text-red-200" />
           </div>
           <span className="text-fs-meta font-extrabold uppercase tracking-widest text-red-200 truncate">
             Urgente
