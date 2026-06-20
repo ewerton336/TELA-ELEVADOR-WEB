@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 /**
@@ -10,8 +10,9 @@ import { useParams } from "react-router-dom";
  * escalar visualmente (1× / 1.5× / 2×) para imitar o painel físico 1920×1080
  * (que roda com devicePixelRatio 2).
  *
- * Quando a escala deixa o conteúdo maior que a janela, a página rola (scroll)
- * para que dê para ver todo o conteúdo mesmo cortado.
+ * - Quando a escala deixa o conteúdo maior que a janela, a página rola.
+ * - "Tela cheia" usa a Fullscreen API e escala o iframe para preencher o
+ *   monitor (num Full HD = 2×, ficando 1920×1080, idêntico ao painel real).
  */
 const BASE_W = 960;
 const BASE_H = 540;
@@ -22,6 +23,40 @@ export default function Preview() {
   const [scale, setScale] = useState(1);
   const [slugInput, setSlugInput] = useState(slug);
   const [currentSlug, setCurrentSlug] = useState(slug);
+
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fsScale, setFsScale] = useState(2);
+
+  // Mantém o estado/escala de tela cheia sincronizados com a Fullscreen API.
+  useEffect(() => {
+    const recompute = () => {
+      const active = document.fullscreenElement === frameRef.current;
+      setIsFullscreen(active);
+      if (active) {
+        // Em tela cheia a janela cobre o monitor: escala para preencher
+        // mantendo 16:9 (FHD → 2×, sem barras).
+        setFsScale(
+          Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H),
+        );
+      }
+    };
+    document.addEventListener("fullscreenchange", recompute);
+    window.addEventListener("resize", recompute);
+    return () => {
+      document.removeEventListener("fullscreenchange", recompute);
+      window.removeEventListener("resize", recompute);
+    };
+  }, []);
+
+  const enterFullscreen = () => {
+    frameRef.current?.requestFullscreen?.().catch(() => {});
+  };
+  const exitFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  };
+
+  const effectiveScale = isFullscreen ? fsScale : scale;
 
   return (
     // Container rolável: usar overflow:auto + margin:auto no conteúdo (em vez de
@@ -61,8 +96,6 @@ export default function Preview() {
             alignItems: "center",
             flexWrap: "wrap",
             justifyContent: "center",
-            position: "sticky",
-            left: 0,
           }}
         >
           {[1, 1.5, 2].map((s) => (
@@ -82,6 +115,21 @@ export default function Preview() {
               {s}×
             </button>
           ))}
+          <button
+            onClick={enterFullscreen}
+            style={{
+              padding: "4px 12px",
+              borderRadius: 6,
+              border: "1px solid #2563eb",
+              background: "#1e293b",
+              color: "#93c5fd",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            ⛶ Tela cheia
+          </button>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -120,32 +168,68 @@ export default function Preview() {
           </form>
         </div>
 
-        {/* "Painel" do elevador em 960×540, escalado. Sem maxWidth para que,
-            ao escalar, ele possa exceder a janela e a página role. */}
+        {/* "Painel" do elevador. Em tela cheia, vira o elemento fullscreen e
+            preenche o monitor; fora dela, é a caixa 960×540 escalada (sem
+            maxWidth, para que ao escalar possa exceder a janela e rolar). */}
         <div
-          style={{
-            width: BASE_W * scale,
-            height: BASE_H * scale,
-            flexShrink: 0,
-            borderRadius: 10,
-            overflow: "hidden",
-            boxShadow: "0 0 0 8px #111827, 0 20px 60px rgba(0,0,0,0.6)",
-            background: "#0f172a",
-          }}
+          ref={frameRef}
+          style={
+            isFullscreen
+              ? {
+                  width: "100vw",
+                  height: "100vh",
+                  background: "#000",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }
+              : {
+                  width: BASE_W * scale,
+                  height: BASE_H * scale,
+                  flexShrink: 0,
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  boxShadow: "0 0 0 8px #111827, 0 20px 60px rgba(0,0,0,0.6)",
+                  background: "#0f172a",
+                }
+          }
         >
           <iframe
-            key={`${currentSlug}-${scale}`}
+            key={`${currentSlug}`}
             title="Tela do elevador (preview)"
             src={`/${currentSlug}`}
             style={{
               width: BASE_W,
               height: BASE_H,
               border: 0,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
+              transform: `scale(${effectiveScale})`,
+              transformOrigin: isFullscreen ? "center center" : "top left",
               display: "block",
+              flexShrink: 0,
             }}
           />
+
+          {isFullscreen && (
+            <button
+              onClick={exitFullscreen}
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                padding: "6px 12px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,0.25)",
+                background: "rgba(0,0,0,0.55)",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: 12,
+                zIndex: 10,
+              }}
+            >
+              ✕ Sair (Esc)
+            </button>
+          )}
         </div>
       </div>
     </div>
