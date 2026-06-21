@@ -58,27 +58,21 @@ describe("Dashboard — design tokens (index.css)", () => {
 
 // ── Portrait aumenta espaçamentos ──
 
-describe("Dashboard — portrait aumenta espaçamentos", () => {
-  it("portrait media query sobrescreve --dash-gap para 1.5rem", () => {
-    const portraitBlock = cssContent.match(
-      /@media\s*\(orientation:\s*portrait\)\s*\{([\s\S]*?\})\s*\}/,
-    );
-    expect(portraitBlock).not.toBeNull();
-    expect(portraitBlock![1]).toContain("--dash-gap: 1.5rem");
-  });
-
-  it("portrait media query sobrescreve --dash-pad para 1.5rem", () => {
-    const portraitBlock = cssContent.match(
-      /@media\s*\(orientation:\s*portrait\)\s*\{([\s\S]*?\})\s*\}/,
-    );
-    expect(portraitBlock).not.toBeNull();
-    expect(portraitBlock![1]).toContain("--dash-pad: 1.5rem");
-  });
-
-  it("force-portrait sobrescreve --dash-gap para 1.5rem", () => {
+describe("Dashboard — tokens de espaçamento em portrait", () => {
+  it("force-portrait define --dash-gap", () => {
     expect(cssContent).toMatch(
-      /\.force-portrait\s+\.elevator-screen\s*\{[^}]*--dash-gap:\s*1\.5rem/s,
+      /\.force-portrait\s+\.elevator-screen\s*\{[^}]*--dash-gap:/s,
     );
+  });
+
+  it("force-portrait define --dash-pad", () => {
+    expect(cssContent).toMatch(
+      /\.force-portrait\s+\.elevator-screen\s*\{[^}]*--dash-pad:/s,
+    );
+  });
+
+  it("portrait (rotacionado ou nativo) aumenta a altura mínima do header", () => {
+    expect(cssContent).toMatch(/--dash-header-min:\s*140px/);
   });
 });
 

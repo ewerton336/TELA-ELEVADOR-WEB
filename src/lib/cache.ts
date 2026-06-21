@@ -21,10 +21,9 @@ export function getCache<T>(key: string): T | null {
 
   try {
     const item: CacheItem<T> = JSON.parse(raw);
-    const isExpired = Date.now() - item.timestamp > item.ttl;
-    
-    // Retorna dados mesmo se expirados (offline-first)
-    // O chamador pode verificar se está expirado com isCacheExpired
+
+    // Retorna dados mesmo se expirados (offline-first).
+    // O chamador pode verificar se está expirado com isCacheExpired.
     return item.data;
   } catch {
     return null;

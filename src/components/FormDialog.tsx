@@ -63,9 +63,9 @@ export function FormDialog({
   const [internalLoading, setInternalLoading] = useState(false);
   const loading = externalLoading ?? internalLoading;
 
-  // Sync initial values when dialog opens
+  const wasOpen = React.useRef(false);
   React.useEffect(() => {
-    if (open) {
+    if (open && !wasOpen.current) {
       setValues(
         fields.reduce(
           (acc, f) => ({ ...acc, [f.name]: initialValues[f.name] ?? "" }),
@@ -73,6 +73,7 @@ export function FormDialog({
         ),
       );
     }
+    wasOpen.current = open;
   }, [open, initialValues, fields]);
 
   const handleChange = useCallback((name: string, value: string) => {

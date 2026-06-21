@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { NewsData, NewsItem } from "@/services/newsService";
 import { NoticiaInterna } from "@/services/noticiaInternaService";
 import { Newspaper, Building2 } from "lucide-react";
+import { useFitText } from "@/hooks/useFitText";
 
 type CarouselSlide =
   | { type: "external"; data: NewsItem }
@@ -161,58 +162,13 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
 
           const item = slide.data;
           return (
-          <div
-            key={`ext-${item.id}-${index}`}
-            className={`fade-slide ${isActive ? "is-active" : ""}`}
-            aria-hidden={!isActive}
-          >
-            <div className="relative h-full">
-              <img
-                src={item.thumbnail}
-                alt={item.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://placehold.co/1200x800/1e293b/94a3b8?text=G1";
-                }}
-              />
-
-              {/* Gradient scrim for text legibility */}
-              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-              <div className="relative h-full px-8 sm:px-10 py-8 flex flex-col justify-between text-white">
-                <div className="flex items-center justify-between gap-3 text-sm text-white/80">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-orange-500/75 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
-                      <Newspaper className="w-3.5 h-3.5 inline mr-1" />
-                      {item.source}
-                    </div>
-                    {item.category && (
-                      <span className="bg-white/15 text-white text-[11px] font-bold px-2 py-1 rounded">
-                        {item.category}
-                      </span>
-                    )}
-                  </div>
-                  <span className="bg-black/40 px-2 py-1 rounded text-xs font-medium">
-                    {item.pubDateFormatted}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-3 max-w-[72%] news-content pb-4">
-                  <h3 className="text-white font-black text-2xl sm:text-3xl md:text-4xl leading-tight">
-                    {item.title}
-                  </h3>
-                  {item.description && (
-                    <p className="text-white/80 text-base sm:text-lg leading-relaxed max-w-2xl">
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-              </div>
+            <div
+              key={`ext-${item.id}-${index}`}
+              className={`fade-slide ${isActive ? "is-active" : ""}`}
+              aria-hidden={!isActive}
+            >
+              <ExternalNewsSlide item={item} />
             </div>
-          </div>
           );
         })}
       </div>
@@ -231,6 +187,53 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
   );
 }
 
+function ExternalNewsSlide({ item }: { item: NewsItem }) {
+  const fitRef = useFitText(`${item.title}|${item.description ?? ""}`);
+  return (
+    <div className="relative h-full">
+      <img
+        src={item.thumbnail}
+        alt={item.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src =
+            "https://placehold.co/1200x800/1e293b/94a3b8?text=G1";
+        }}
+      />
+      <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
+      <div className="relative h-full px-7 py-6 flex flex-col">
+        <div className="flex items-center justify-between gap-3 text-sm text-white/80 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="bg-orange-500/80 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded">
+              <Newspaper className="w-3.5 h-3.5 inline mr-1" />
+              {item.source}
+            </div>
+            {item.category && (
+              <span className="bg-white/15 text-white text-[11px] font-bold px-2 py-1 rounded">
+                {item.category}
+              </span>
+            )}
+          </div>
+          <span className="bg-black/45 px-2 py-1 rounded text-xs font-medium">
+            {item.pubDateFormatted}
+          </span>
+        </div>
+
+        <div className="relative flex-1 min-h-0 flex flex-col justify-end mt-3">
+          <div ref={fitRef} className="news-text-panel news-text-block">
+            <h3 className="news-title">{item.title}</h3>
+            {item.description && (
+              <p className="news-subtitle">{item.description}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Slide de notícia interna (imagem ou vídeo)
 export function InternalNewsSlide({
   item,
@@ -243,6 +246,7 @@ export function InternalNewsSlide({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [imgError, setImgError] = useState(false);
+  const fitRef = useFitText(`${item.titulo ?? ""}|${item.subtitulo ?? ""}`);
 
   const hasMedia = !!item.mediaUrl;
   const hasTitle = !!item.titulo;
@@ -304,25 +308,19 @@ export function InternalNewsSlide({
       )}
 
       {/* Content */}
-      <div className="relative h-full px-8 sm:px-10 py-8 flex flex-col justify-between text-white">
-        <div className="flex items-center gap-2">
+      <div className="relative h-full px-7 py-6 flex flex-col text-white">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
             📢 Condomínio
           </span>
         </div>
 
         {hasText && (
-          <div className="flex flex-col gap-3 max-w-[85%] pb-4">
-            {hasTitle && (
-              <h3 className="internal-news-title font-black text-2xl sm:text-3xl md:text-4xl leading-tight text-white">
-                {item.titulo}
-              </h3>
-            )}
-            {hasSubtitle && (
-              <p className="internal-news-subtitle text-white/90 text-base sm:text-lg leading-relaxed max-w-2xl">
-                {item.subtitulo}
-              </p>
-            )}
+          <div className="relative flex-1 min-h-0 flex flex-col justify-end mt-3">
+            <div ref={fitRef} className="news-text-panel news-text-block">
+              {hasTitle && <h3 className="news-title">{item.titulo}</h3>}
+              {hasSubtitle && <p className="news-subtitle">{item.subtitulo}</p>}
+            </div>
           </div>
         )}
       </div>

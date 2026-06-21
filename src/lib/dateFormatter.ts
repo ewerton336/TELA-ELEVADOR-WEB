@@ -5,27 +5,32 @@
  * Pure functions (no hooks/state), so they can also be called outside components.
  */
 
-const locale = "pt-BR";
+const MESES_ABREV = [
+  "jan", "fev", "mar", "abr", "mai", "jun",
+  "jul", "ago", "set", "out", "nov", "dez",
+];
+
+const p2 = (n: number) => String(n).padStart(2, "0");
 
 /** "10 de mar." */
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(locale, {
-    day: "2-digit",
-    month: "short",
-  });
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return `${p2(d.getDate())} de ${MESES_ABREV[d.getMonth()]}.`;
 }
 
 /** "14:05" */
 export function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return `${p2(d.getHours())}:${p2(d.getMinutes())}`;
 }
 
 /** "10/03/2026" */
 export function formatDateShort(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(locale);
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
 /** "agora", "30s atrás", "5m atrás", "2h atrás" */

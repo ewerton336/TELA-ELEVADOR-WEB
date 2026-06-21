@@ -31,6 +31,14 @@ describe("formatTime", () => {
     const result = formatTime("2026-01-01T00:00:00");
     expect(result).toBe("00:00");
   });
+
+  it("nunca inclui segundos, mesmo se o Intl do ambiente os incluir (WebView Android)", () => {
+    const spy = vi
+      .spyOn(Date.prototype, "toLocaleTimeString")
+      .mockReturnValue("11:39:52");
+    expect(formatTime("2026-03-10T11:39:52")).toBe("11:39");
+    spy.mockRestore();
+  });
 });
 
 describe("formatDateShort", () => {

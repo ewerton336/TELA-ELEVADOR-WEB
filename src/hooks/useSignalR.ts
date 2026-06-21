@@ -102,6 +102,7 @@ export function useSignalR({
   const startTimeRef = useRef(Date.now());
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const screenshotBusyRef = useRef(false);
 
   // Refs para callbacks (evita que mudança de callback reconecte o hub)
   const onAvisosRef = useRef(onAvisosReceived);
@@ -304,6 +305,8 @@ export function useSignalR({
     });
 
     connection.on("RequestScreenshot", async () => {
+      if (screenshotBusyRef.current) return;
+      screenshotBusyRef.current = true;
       try {
         const html2canvas = (await import("html2canvas")).default;
         const el =
@@ -331,6 +334,8 @@ export function useSignalR({
         });
       } catch {
         void 0;
+      } finally {
+        screenshotBusyRef.current = false;
       }
     });
 

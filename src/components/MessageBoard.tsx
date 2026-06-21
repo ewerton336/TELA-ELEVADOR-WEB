@@ -1,38 +1,11 @@
-import { useEffect, useMemo, useState, useRef, useLayoutEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Message } from "@/services/messageService";
 import { MessageSquare, AlertTriangle, Clock, Calendar } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/dateFormatter";
+import { useFitText } from "@/hooks/useFitText";
 
 interface MessageBoardProps {
   messages: Message[];
-}
-
-function useFitText(content: string) {
-  const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const box = el?.parentElement;
-    if (!el || !box) return;
-    const fit = () => {
-      el.style.fontSize = "";
-      let size = parseFloat(getComputedStyle(el).fontSize) || 22;
-      const min = 12;
-      let guard = 0;
-      while (size > min && box.scrollHeight > box.clientHeight && guard < 80) {
-        size -= 1;
-        el.style.fontSize = `${size}px`;
-        guard += 1;
-      }
-    };
-    fit();
-    const ro = new ResizeObserver(() => fit());
-    ro.observe(box);
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(fit).catch(() => void 0);
-    }
-    return () => ro.disconnect();
-  }, [content]);
-  return ref;
 }
 
 export function MessageBoard({ messages }: MessageBoardProps) {
@@ -143,17 +116,9 @@ export function MessageBoard({ messages }: MessageBoardProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden text-white">
       {isUrgent ? (
-        <UrgentCard
-          message={currentMessage}
-          index={urgentIndex}
-          total={urgentMessages.length}
-        />
+        <UrgentCard message={currentMessage} />
       ) : (
-        <NormalCard
-          message={currentMessage}
-          index={normalIndex}
-          total={normalMessages.length}
-        />
+        <NormalCard message={currentMessage} />
       )}
 
       {/* Progress bar */}
@@ -198,15 +163,7 @@ function HeaderDateTime({
 }
 
 /* ── Card de mensagem normal ── */
-function NormalCard({
-  message,
-  index = 0,
-  total = 1,
-}: {
-  message: Message;
-  index?: number;
-  total?: number;
-}) {
+function NormalCard({ message }: { message: Message }) {
   const contentRef = useFitText(message.content);
   return (
     <div className="msg-card h-full flex flex-col rounded-2xl border border-white/10 bg-slate-800/40 overflow-hidden">
@@ -215,18 +172,13 @@ function NormalCard({
           <div className="w-8 h-8 rounded-lg bg-orange-500/25 flex items-center justify-center flex-shrink-0">
             <MessageSquare className="w-4 h-4 text-orange-300" />
           </div>
-          <span className="text-fs-meta font-bold uppercase tracking-widest text-orange-300 truncate">
+          <span className="msg-kicker font-bold uppercase text-orange-300 truncate">
             Aviso do síndico
           </span>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {message.createdAt && (
             <HeaderDateTime createdAt={message.createdAt} variant="normal" />
-          )}
-          {total > 1 && (
-            <span className="text-fs-meta text-white/70 tabular-nums font-medium">
-              {index + 1}/{total}
-            </span>
           )}
         </div>
       </div>
@@ -251,15 +203,7 @@ function NormalCard({
 }
 
 /* ── Card de mensagem urgente ── */
-function UrgentCard({
-  message,
-  index = 0,
-  total = 1,
-}: {
-  message: Message;
-  index?: number;
-  total?: number;
-}) {
+function UrgentCard({ message }: { message: Message }) {
   const contentRef = useFitText(message.content);
   return (
     <div className="msg-card msg-card--urgent h-full flex flex-col rounded-2xl border-2 border-red-500 bg-red-950/85 overflow-hidden">
@@ -268,18 +212,13 @@ function UrgentCard({
           <div className="w-8 h-8 rounded-lg bg-red-500/30 flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="w-4 h-4 text-red-200" />
           </div>
-          <span className="text-fs-meta font-extrabold uppercase tracking-widest text-red-200 truncate">
+          <span className="msg-kicker font-extrabold uppercase text-red-200 truncate">
             Urgente
           </span>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {message.createdAt && (
             <HeaderDateTime createdAt={message.createdAt} variant="urgent" />
-          )}
-          {total > 1 && (
-            <span className="text-fs-meta text-red-100/80 tabular-nums font-medium">
-              {index + 1}/{total}
-            </span>
           )}
         </div>
       </div>

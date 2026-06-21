@@ -261,7 +261,7 @@ describe("MessageBoard — contador", () => {
     expect(screen.queryByText(/1\/1/)).not.toBeInTheDocument();
   });
 
-  it("deve mostrar contador quando há mais de uma mensagem", () => {
+  it("não deve mostrar contador quando há mais de uma mensagem", () => {
     render(
       <MessageBoard
         messages={[
@@ -270,6 +270,6 @@ describe("MessageBoard — contador", () => {
         ]}
       />,
     );
-    expect(screen.getByText("1/2")).toBeInTheDocument();
+    expect(screen.queryByText("1/2")).not.toBeInTheDocument();
   });
 });

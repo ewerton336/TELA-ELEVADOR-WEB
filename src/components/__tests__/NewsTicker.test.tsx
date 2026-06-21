@@ -27,15 +27,9 @@ describe("NewsTicker — renderização", () => {
       <NewsTicker items={[makeItem()]} visible={true} />,
     );
     expect(container.querySelector(".news-ticker")).toBeInTheDocument();
-    expect(screen.getByText("NOTÍCIAS")).toBeInTheDocument();
     expect(
       screen.getAllByText(/Previsão indica chuva forte no litoral/).length,
     ).toBeGreaterThanOrEqual(1);
-  });
-
-  it("deve renderizar a label NOTÍCIAS", () => {
-    render(<NewsTicker items={[makeItem()]} visible={true} />);
-    expect(screen.getByText("NOTÍCIAS")).toBeInTheDocument();
   });
 
   it("deve ter role marquee para acessibilidade", () => {

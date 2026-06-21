@@ -23,6 +23,7 @@ const DEFAULT_SLUG = "gramado";
 export default function Preview() {
   const { slug = DEFAULT_SLUG } = useParams();
   const [scale, setScale] = useState(1);
+  const [orientation, setOrientation] = useState<"auto" | "portrait" | "landscape">("auto");
   const [slugInput, setSlugInput] = useState(slug);
   const [currentSlug, setCurrentSlug] = useState(slug);
 
@@ -62,9 +63,9 @@ export default function Preview() {
 
   const iframe = (
     <iframe
-      key={currentSlug}
+      key={`${currentSlug}-${orientation}`}
       title="Tela do elevador (preview)"
-      src={`/${currentSlug}`}
+      src={orientation === "auto" ? `/${currentSlug}` : `/${currentSlug}?orientation=${orientation}`}
       style={{
         width: BASE_W,
         height: BASE_H,
@@ -102,8 +103,8 @@ export default function Preview() {
         <div style={{ color: "#cbd5e1", fontSize: 13, textAlign: "center" }}>
           <strong>Pré-visualização — resolução do elevador</strong>
           <div style={{ color: "#7c8aa5", marginTop: 2 }}>
-            {BASE_W}×{BASE_H} CSS px · escala {scale}× ({dispW}×{dispH}) · slug:{" "}
-            <code>{currentSlug}</code>
+            {BASE_W}×{BASE_H} CSS px · escala {scale}× ({dispW}×{dispH}) ·
+            orientação {orientation} · slug: <code>{currentSlug}</code>
           </div>
         </div>
 
@@ -117,6 +118,28 @@ export default function Preview() {
             justifyContent: "center",
           }}
         >
+          {[
+            { v: "auto", label: "Auto" },
+            { v: "portrait", label: "Retrato" },
+            { v: "landscape", label: "Paisagem" },
+          ].map((o) => (
+            <button
+              key={o.v}
+              onClick={() => setOrientation(o.v as "auto" | "portrait" | "landscape")}
+              style={{
+                padding: "4px 12px",
+                borderRadius: 6,
+                border: "1px solid #334155",
+                background: orientation === o.v ? "#2563eb" : "#1e293b",
+                color: "#e2e8f0",
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+          <div style={{ width: 1, height: 20, background: "#334155", margin: "0 4px" }} />
           {[1, 1.5, 2].map((s) => (
             <button
               key={s}

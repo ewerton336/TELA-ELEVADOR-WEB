@@ -87,20 +87,20 @@ export const WeatherCard = memo(function WeatherCard({
     const today = data.days[0];
 
     return (
-      <div className="glass-card rounded-lg px-4 py-2">
-        <div className="flex items-center gap-4">
+      <div className="glass-card rounded-lg px-3 py-1.5 weather-compact">
+        <div className="flex items-center gap-4 weather-compact-row">
           {/* Hoje */}
           <div className="flex items-center gap-2">
             <WeatherIcon
               weatherCode={today.weatherCode}
               fallbackEmoji={today.weatherIcon}
               alt={today.weatherDescription}
-              sizePx={32}
+              sizePx={26}
             />
             <div className="flex flex-col leading-none">
               <span className="text-white/60 text-xs font-medium uppercase">Hoje</span>
               <div className="flex items-center gap-1">
-                <span className="text-white font-bold text-lg tabular-nums">
+                <span className="text-white font-bold text-base tabular-nums">
                   {today.temperatureMax}°
                 </span>
                 <span className="text-white/40 text-sm tabular-nums">
@@ -112,17 +112,17 @@ export const WeatherCard = memo(function WeatherCard({
 
           {/* Amanhã */}
           {data.days[1] && (
-            <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+            <div className="weather-compact-amanha flex items-center gap-2 border-l border-white/10 pl-4">
               <WeatherIcon
                 weatherCode={data.days[1].weatherCode}
                 fallbackEmoji={data.days[1].weatherIcon}
                 alt={data.days[1].weatherDescription}
-                sizePx={32}
+                sizePx={26}
               />
               <div className="flex flex-col leading-none">
                 <span className="text-white/50 text-xs font-medium uppercase">Amanhã</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-white/70 font-semibold text-lg tabular-nums">
+                  <span className="text-white/70 font-semibold text-base tabular-nums">
                     {data.days[1].temperatureMax}°
                   </span>
                   <span className="text-white/35 text-sm tabular-nums">

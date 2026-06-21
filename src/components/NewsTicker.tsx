@@ -25,13 +25,20 @@ function NewsTickerInner({ items, visible }: NewsTickerProps) {
       aria-label="Ticker de notícias"
     >
       <div className="news-ticker-track">
-        {/* Dois blocos idênticos para loop contínuo via CSS */}
         <span className="news-ticker-content" aria-hidden="false">
           {tickerText}
+          {SEPARATOR}
+          <span className="news-ticker-credit">
+            Desenvolvido por Ewerton Guimarães • (13) 99782-7870
+          </span>
           {SEPARATOR}
         </span>
         <span className="news-ticker-content" aria-hidden="true">
           {tickerText}
+          {SEPARATOR}
+          <span className="news-ticker-credit">
+            Desenvolvido por Ewerton Guimarães • (13) 99782-7870
+          </span>
           {SEPARATOR}
         </span>
       </div>

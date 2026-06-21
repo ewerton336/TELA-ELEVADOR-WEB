@@ -83,12 +83,12 @@
   position: relative;
 
   /* ── Tipografia (landscape default) ── */
-  --fs-display: 96px;   /* hora */
-  --fs-title: 48px;     /* título de notícia / aviso */
-  --fs-subtitle: 28px;  /* descrição de notícia */
-  --fs-body: 22px;      /* conteúdo de aviso */
-  --fs-meta: 16px;      /* data, contador, badge */
-  --fs-tiny: 12px;      /* créditos, micro-info */
+  --fs-display: 96px; /* hora */
+  --fs-title: 48px; /* título de notícia / aviso */
+  --fs-subtitle: 28px; /* descrição de notícia */
+  --fs-body: 22px; /* conteúdo de aviso */
+  --fs-meta: 16px; /* data, contador, badge */
+  --fs-tiny: 12px; /* créditos, micro-info */
 
   /* ── Layout ── */
   --dash-gap: 1.5rem;
@@ -108,8 +108,8 @@
   --fs-meta: 16px;
   --fs-tiny: 13px;
 
-  --dash-gap: 1.25rem;
-  --dash-pad: 1.5rem;
+  --dash-gap: 0.25rem;
+  --dash-pad: 0.25rem;
   --dash-header-min: 140px;
   --ticker-h: 48px;
   --news-scrim-h: 60%;
@@ -271,15 +271,19 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(6,182,212,0.18));
-  border: 1px solid rgba(59,130,246,0.35);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.25),
+    rgba(6, 182, 212, 0.18)
+  );
+  border: 1px solid rgba(59, 130, 246, 0.35);
   border-radius: 0.5rem;
   padding: 4px 10px 4px 12px;
   line-height: 1;
 }
 
 .clock-badge-day {
-  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-family: var(--font-display, "Poppins", sans-serif);
   font-weight: 700;
   font-size: calc(var(--fs-display) * 0.34);
   color: #fff;
@@ -290,11 +294,11 @@
 .clock-badge-month {
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  font-family: var(--font-display, 'Poppins', sans-serif);
+  font-family: var(--font-display, "Poppins", sans-serif);
   font-weight: 600;
   font-size: calc(var(--fs-meta) * 0.7);
   letter-spacing: 0.08em;
-  color: rgba(147,197,253,0.9);
+  color: rgba(147, 197, 253, 0.9);
   line-height: 1;
   user-select: none;
 }
@@ -308,13 +312,12 @@
   letter-spacing: -0.02em;
 }
 
-/* Portrait: layout horizontal compacto (lado a lado) */
 .force-portrait .dashboard-header {
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .force-portrait .clock-container {
@@ -330,10 +333,10 @@
 @media (orientation: portrait) {
   .elevator-screen:not(.force-landscape *) .dashboard-header {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
   .elevator-screen:not(.force-landscape *) .clock-container {
     flex-direction: row;
@@ -346,8 +349,8 @@
 }
 
 html.perf-mode .clock-badge {
-  background: rgba(30,41,59,0.8);
-  border-color: rgba(255,255,255,0.15);
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* =========================================================
@@ -358,37 +361,33 @@ html.perf-mode .clock-badge {
 }
 
 .weather-card-header {
-  background: linear-gradient(135deg, rgba(37,99,235,0.20), rgba(6,182,212,0.12));
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.2),
+    rgba(6, 182, 212, 0.12)
+  );
 }
 
 .weather-row {
   transition: background-color 200ms ease;
 }
 
-/* Portrait: manter dias lado a lado, esconder 3º para caber em horizontal */
-.force-portrait .weather-compact-row {
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
+.weather-compact-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
 }
 
-.force-portrait .weather-compact-row > div:nth-child(3) {
-  display: none;
-}
-
-@media (orientation: portrait) {
-  .elevator-screen:not(.force-landscape *) .weather-compact-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-  }
-  .elevator-screen:not(.force-landscape *) .weather-compact-row > div:nth-child(3) {
-    display: none;
-  }
+.weather-compact-amanha {
+  border-left: 0;
+  padding-left: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.25rem;
+  width: 100%;
 }
 
 html.perf-mode .weather-card-header {
-  background: rgba(30,41,59,0.6);
+  background: rgba(30, 41, 59, 0.6);
 }
 
 html.perf-mode .weather-icon {
@@ -416,13 +415,18 @@ html.perf-mode .weather-row {
 .msg-body {
   font-size: var(--fs-body);
   line-height: 1.55;
-  color: rgba(255,255,255,0.88);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.msg-kicker {
+  font-size: calc(var(--fs-meta) * 0.8);
+  letter-spacing: 0.05em;
 }
 
 .msg-meta-text {
-  font-size: var(--fs-meta);
+  font-size: calc(var(--fs-meta) * 0.82);
   font-weight: 500;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .msg-content p {
@@ -442,8 +446,14 @@ html.perf-mode .weather-row {
 
 /* Borda pulsante de aviso urgente — chama atenção sem fadiga */
 @keyframes urgent-border-pulse {
-  0%   { border-color: rgba(239, 68, 68, 0.55); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
-  100% { border-color: rgba(239, 68, 68, 1);    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  0% {
+    border-color: rgba(239, 68, 68, 0.55);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+  }
+  100% {
+    border-color: rgba(239, 68, 68, 1);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
 }
 
 .msg-card--urgent {
@@ -478,17 +488,37 @@ html.perf-mode .msg-card--urgent {
   pointer-events: auto;
 }
 
+.news-text-block {
+  font-size: var(--fs-subtitle);
+}
+
+.news-text-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(2, 6, 23, 0.64),
+    rgba(2, 6, 23, 0.46)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.85rem;
+  padding: 0.6em 0.8em;
+}
+
 .news-title {
-  font-size: var(--fs-title);
+  font-size: 1.6em;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1.12;
   color: #fff;
+  text-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.85),
+    0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
 .news-subtitle {
-  font-size: var(--fs-subtitle);
-  line-height: 1.4;
-  color: rgba(255,255,255,0.88);
+  font-size: 0.92em;
+  line-height: 1.38;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 0.45em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
 .news-scrim {
@@ -496,13 +526,18 @@ html.perf-mode .msg-card--urgent {
 }
 
 @keyframes carousel-progress {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .carousel-progress-bar {
   transform-origin: left center;
-  animation: carousel-progress var(--carousel-progress-duration, 10000ms) linear forwards;
+  animation: carousel-progress var(--carousel-progress-duration, 10000ms) linear
+    forwards;
 }
 
 .news-slide {
@@ -510,11 +545,11 @@ html.perf-mode .msg-card--urgent {
 }
 
 .internal-news-title {
-  text-shadow: 0 2px 12px rgba(0,0,0,0.75);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
 }
 
 .internal-news-subtitle {
-  text-shadow: 0 1px 6px rgba(0,0,0,0.65);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.65);
 }
 
 html.perf-mode .internal-news-title,
@@ -523,20 +558,25 @@ html.perf-mode .internal-news-subtitle {
 }
 
 html.perf-mode .internal-news-overlay {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
 }
 
 /* =========================================================
    === MESSAGE PROGRESS BAR ===
    ========================================================= */
 @keyframes message-progress {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .message-progress-bar {
   transform-origin: left center;
-  animation: message-progress var(--message-progress-duration, 15000ms) linear forwards;
+  animation: message-progress var(--message-progress-duration, 15000ms) linear
+    forwards;
 }
 
 /* =========================================================
@@ -551,8 +591,12 @@ html.perf-mode .internal-news-overlay {
   z-index: 30;
   display: flex;
   align-items: center;
-  background: linear-gradient(90deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.95) 100%);
-  border-top: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.97) 0%,
+    rgba(30, 41, 59, 0.95) 100%
+  );
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
@@ -572,13 +616,23 @@ html.perf-mode .internal-news-overlay {
 .news-ticker-content {
   flex-shrink: 0;
   padding-left: 2rem;
-  font-size: calc(var(--fs-meta) * 1.25);
-  color: rgba(255,255,255,0.9);
+  font-size: calc(var(--fs-meta) * 1.05);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.news-ticker-credit {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: rgba(147, 197, 253, 0.72);
 }
 
 @keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .elevator-frame.has-ticker .dashboard-grid {
@@ -586,26 +640,21 @@ html.perf-mode .internal-news-overlay {
 }
 
 html.perf-mode .news-ticker {
-  background: rgba(15,23,42,0.95);
+  background: rgba(15, 23, 42, 0.95);
 }
 
 /* =========================================================
    === SCROLLBAR ===
    ========================================================= */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 0;
+  height: 0;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-white/20 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-white/30;
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* =========================================================

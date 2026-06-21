@@ -43,7 +43,7 @@ export function useOfflineSync() {
     try {
       await Promise.all([
         fetchWeatherBySlug(slug).catch(() => null),
-        fetchNews().catch(() => null),
+        fetchNews(slug).catch(() => null),
       ]);
 
       setState((prev) => ({

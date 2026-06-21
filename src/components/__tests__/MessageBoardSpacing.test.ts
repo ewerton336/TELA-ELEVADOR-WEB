@@ -9,8 +9,7 @@ const src = fs.readFileSync(
 
 describe("MessageBoard — consistência de espaçamento", () => {
   it("NormalCard e UrgentCard usam px-6 no bloco principal", () => {
-    // Ambos devem ter "px-6 pt-6 pb-4" no bloco superior
-    const matches = src.match(/px-6 pt-6 pb-4/g);
+    const matches = src.match(/px-6 pt-4 pb-2/g);
     expect(matches).not.toBeNull();
     expect(matches!.length).toBe(2); // NormalCard + UrgentCard
   });

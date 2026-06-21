@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DigitalClock } from "@/components/DigitalClock";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
@@ -14,17 +14,37 @@ import {
   getCachedWeather,
   WeatherData,
 } from "@/services/weatherService";
-import { fetchNews, getCachedNews, NewsData, NewsItem } from "@/services/newsService";
+import {
+  fetchNews,
+  getCachedNews,
+  NewsData,
+  NewsItem,
+} from "@/services/newsService";
 import { getMessages, Message } from "@/services/messageService";
 import { getTickerMensagens, TickerMensagem } from "@/services/tickerService";
-import { getPredio, OrientationMode, Predio, ScreenModules, DEFAULT_MODULES } from "@/services/predioService";
-import { getNoticiasInternas, NoticiaInterna } from "@/services/noticiaInternaService";
+import {
+  getPredio,
+  OrientationMode,
+  Predio,
+  ScreenModules,
+  DEFAULT_MODULES,
+} from "@/services/predioService";
+import {
+  getNoticiasInternas,
+  NoticiaInterna,
+} from "@/services/noticiaInternaService";
 
 export function Dashboard() {
   const { isSyncing } = useOfflineSync();
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+
+  const orientationOverride: OrientationMode | null = (() => {
+    const o = searchParams.get("orientation");
+    return o === "portrait" || o === "landscape" ? o : null;
+  })();
   const [messages, setMessages] = useState<Message[]>([]);
   const [tickerMensagens, setTickerMensagens] = useState<TickerMensagem[]>([]);
   const [orientationMode, setOrientationMode] =
@@ -51,7 +71,8 @@ export function Dashboard() {
         return mode;
       });
     },
-    onNoticiasInternasReceived: (noticias) => queryClient.setQueryData(["noticiasInternas", slug], noticias),
+    onNoticiasInternasReceived: (noticias) =>
+      queryClient.setQueryData(["noticiasInternas", slug], noticias),
     onModulesReceived: (m) => setModules(m),
   });
 
@@ -72,17 +93,18 @@ export function Dashboard() {
 
   useEffect(() => {
     const root = document.documentElement;
+    const effective = orientationOverride ?? orientationMode;
     root.classList.remove("force-portrait", "force-landscape");
-    if (orientationMode === "portrait") {
+    if (effective === "portrait") {
       root.classList.add("force-portrait");
-    } else if (orientationMode === "landscape") {
+    } else if (effective === "landscape") {
       root.classList.add("force-landscape");
     }
 
     return () => {
       root.classList.remove("force-portrait", "force-landscape");
     };
-  }, [orientationMode]);
+  }, [orientationMode, orientationOverride]);
 
   // Carrega mensagens iniciais (SignalR faz o push depois)
   useEffect(() => {
@@ -132,12 +154,12 @@ export function Dashboard() {
     enabled: !!slug,
     staleTime: (query) =>
       query.state.data && (query.state.data as WeatherData | null)?.days?.length
-        ? 1000 * 60 * 30  // 30 minutos se tiver dados
-        : 1000 * 30,      // 30 segundos se estiver vazio
+        ? 1000 * 60 * 30 // 30 minutos se tiver dados
+        : 1000 * 30, // 30 segundos se estiver vazio
     refetchInterval: (query) =>
       query.state.data && (query.state.data as WeatherData | null)?.days?.length
-        ? 1000 * 60 * 60  // 1 hora se tiver dados
-        : 1000 * 30,      // 30 segundos se estiver vazio
+        ? 1000 * 60 * 60 // 1 hora se tiver dados
+        : 1000 * 30, // 30 segundos se estiver vazio
     retry: 3,
     retryDelay: 500,
   });
@@ -203,21 +225,26 @@ export function Dashboard() {
 
   const tickerItems =
     tickerMensagens.length > 0
-      ? tickerMensagens.map((m) => ({ title: m.texto } as NewsItem))
+      ? tickerMensagens.map((m) => ({ title: m.texto }) as NewsItem)
       : (newsData?.items ?? []);
 
   return (
-    <div className="elevator-screen h-screen w-screen overflow-hidden" style={{ height: "100dvh" }}>
+    <div
+      className="elevator-screen h-screen w-screen overflow-hidden"
+      style={{ height: "100dvh" }}
+    >
       <div className="elevator-rotate">
-        <div className={`relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame ${showNewsTicker ? "has-ticker" : ""}`}>
+        <div
+          className={`relative w-full h-full overflow-hidden border border-white/10 bg-slate-950 elevator-frame ${showNewsTicker ? "has-ticker" : ""}`}
+        >
           <div className="absolute inset-0 bg-slate-950/60 dashboard-ambient" />
 
-          <div className={`relative z-10 grid h-full ${showAvisos ? "grid-cols-[var(--dash-sidebar-w)_1fr]" : "grid-cols-1"} dashboard-grid`}>
+          <div
+            className={`relative z-10 grid h-full ${showAvisos ? "grid-cols-[var(--dash-sidebar-w)_1fr]" : "grid-cols-1"} dashboard-grid`}
+          >
             {/* Coluna de avisos à esquerda */}
             {showAvisos && (
-              <aside
-                className="h-full rounded-2xl bg-[#261446] border border-white/10 overflow-hidden dashboard-avisos"
-              >
+              <aside className="h-full rounded-2xl bg-[#261446] border border-white/10 overflow-hidden dashboard-avisos">
                 <div className="h-full px-5 py-4">
                   <MessageBoard messages={messages} />
                 </div>
@@ -225,10 +252,10 @@ export function Dashboard() {
             )}
 
             {/* Barra superior com relogio, clima e status */}
-            <header className="flex items-center justify-between gap-4 px-3 py-3 dashboard-header">
+            <header className="flex items-center justify-between gap-3 px-3 py-1.5 dashboard-header">
               <DigitalClock predio={predio} />
 
-              <div className="flex items-center gap-3 dashboard-header-right">
+              <div className="flex items-center gap-2 dashboard-header-right shrink-0">
                 {showWeather && (
                   <WeatherCard
                     data={weatherData ?? null}
@@ -244,7 +271,12 @@ export function Dashboard() {
             {/* Carrossel de noticias */}
             {showNews && (
               <div className="h-full min-h-0 rounded-2xl overflow-hidden border border-white/10 bg-black/40 dashboard-news">
-                <NewsCarousel data={newsData ?? null} isLoading={newsLoading} error={newsError} noticiasInternas={noticiasInternas} />
+                <NewsCarousel
+                  data={newsData ?? null}
+                  isLoading={newsLoading}
+                  error={newsError}
+                  noticiasInternas={noticiasInternas}
+                />
               </div>
             )}
           </div>
@@ -252,18 +284,13 @@ export function Dashboard() {
           {/* Ticker de notícias no rodapé */}
           <NewsTicker items={tickerItems} visible={showNewsTicker} />
 
-          <div
-            className="absolute right-4 z-20 pointer-events-none"
-            style={{
-              bottom: showNewsTicker
-                ? "calc(var(--ticker-h) + 8px)"
-                : "8px",
-            }}
-          >
-            <p className="text-fs-tiny text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
-              Desenvolvido por Ewerton Guimarães • (13) 99782-7870
-            </p>
-          </div>
+          {!showNewsTicker && (
+            <div className="absolute right-4 bottom-2 z-20 pointer-events-none">
+              <p className="text-fs-tiny text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+                Desenvolvido por Ewerton Guimarães • (13) 99782-7870
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
