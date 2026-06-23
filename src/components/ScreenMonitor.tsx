@@ -112,7 +112,25 @@ function formatScreenDetailRows(
         ? new Date(d.appVersion).toLocaleString("pt-BR")
         : "—",
     },
+    { label: "Modo (html)", value: String(d.effectiveOrientation ?? "—") },
+    { label: "Badge data", value: rectStr(d.layout?.clockBadge) },
+    {
+      label: "Mês no badge",
+      value: d.layout?.clockBadgeMonth
+        ? `"${d.layout.clockBadgeMonthText ?? ""}" ${rectStr(d.layout.clockBadgeMonth)}`
+        : "—",
+    },
+    { label: "Header", value: rectStr(d.layout?.dashboardHeader) },
+    { label: "Ticker (rodapé)", value: rectStr(d.layout?.newsTicker) },
+    { label: "Coluna avisos", value: rectStr(d.layout?.avisos) },
   ];
+}
+
+function rectStr(
+  r: { x: number; y: number; w: number; h: number } | null | undefined,
+): string {
+  if (!r) return "—";
+  return `${r.w}×${r.h} @ (${r.x}, ${r.y})`;
 }
 
 // Heartbeat parado por muito tempo, mesmo com conexão ativa (tela travada)

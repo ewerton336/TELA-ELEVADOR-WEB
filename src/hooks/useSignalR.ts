@@ -74,6 +74,29 @@ function collectScreenDetails() {
           clientHeight: container.clientHeight,
         }
       : null,
+    effectiveOrientation: docEl?.className || "auto",
+    layout: (() => {
+      const rectOf = (sel: string) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        return {
+          x: Math.round(b.x),
+          y: Math.round(b.y),
+          w: Math.round(b.width),
+          h: Math.round(b.height),
+        };
+      };
+      const monthEl = document.querySelector(".clock-badge-month");
+      return {
+        clockBadge: rectOf(".clock-badge"),
+        clockBadgeMonth: rectOf(".clock-badge-month"),
+        clockBadgeMonthText: monthEl ? (monthEl.textContent || "").trim() : null,
+        dashboardHeader: rectOf(".dashboard-header"),
+        newsTicker: rectOf(".news-ticker"),
+        avisos: rectOf(".dashboard-avisos"),
+      };
+    })(),
     userAgent: navigator.userAgent,
     platform: navigator.platform,
     language: navigator.language,
