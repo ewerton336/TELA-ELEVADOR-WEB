@@ -11,7 +11,7 @@ import { getPredio, OrientationMode, ScreenModules } from "@/services/predioServ
 import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaService";
 import { getPredioHubUrl, buildBackendUrl } from "@/lib/backendUrl";
 import { getScreenDeviceId } from "@/lib/screenDeviceId";
-import { setCache } from "@/lib/cache";
+import { setCache, clearAllCache } from "@/lib/cache";
 
 /**
  * Coleta os detalhes da tela onde a aplicação está rodando (resolução, zoom,
@@ -290,6 +290,7 @@ export function useSignalR({
     connection.on("ForceRefresh", async () => {
       console.log("[SignalR] ForceRefresh recebido — limpando cache e recarregando");
       try {
+        clearAllCache();
         if ("serviceWorker" in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
           await Promise.all(regs.map((r) => r.unregister()));

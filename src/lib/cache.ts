@@ -46,6 +46,15 @@ export function clearCache(key: string): void {
   localStorage.removeItem(CACHE_PREFIX + key);
 }
 
+export function clearAllCache(): void {
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(CACHE_PREFIX)) keys.push(key);
+  }
+  keys.forEach((key) => localStorage.removeItem(key));
+}
+
 export function getCacheAge(key: string): number | null {
   const raw = localStorage.getItem(CACHE_PREFIX + key);
   if (!raw) return null;

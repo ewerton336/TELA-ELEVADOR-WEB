@@ -4,7 +4,16 @@ import {
   formatTime,
   formatDateShort,
   formatTimeAgo,
+  monthShortUpper,
 } from "../dateFormatter";
+
+describe("monthShortUpper", () => {
+  it("retorna o mês abreviado em pt-BR maiúsculo, sem depender de Intl", () => {
+    expect(monthShortUpper(new Date(2026, 5, 23))).toBe("JUN");
+    expect(monthShortUpper(new Date(2026, 0, 1))).toBe("JAN");
+    expect(monthShortUpper(new Date(2026, 11, 31))).toBe("DEZ");
+  });
+});
 
 describe("formatDate", () => {
   it("formata com dia e mês abreviado em pt-BR", () => {

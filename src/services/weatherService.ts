@@ -27,17 +27,6 @@ function getCacheKeyForCity(slug: string): string {
 export async function fetchWeatherBySlug(slug: string): Promise<WeatherData> {
   const cacheKey = getCacheKeyForCity(slug);
 
-  // Verifica cache primeiro
-  if (!isCacheExpired(cacheKey)) {
-    const cached = getCache<WeatherData>(cacheKey);
-    if (cached) {
-      console.log(`Usando clima do cache para ${slug}`);
-      return cached;
-    }
-  }
-
-  console.log(`Buscando clima da API para ${slug}...`);
-
   try {
     const weatherData = await requestJson<WeatherData>(
       slug,

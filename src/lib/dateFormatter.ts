@@ -12,6 +12,11 @@ const MESES_ABREV = [
 
 const p2 = (n: number) => String(n).padStart(2, "0");
 
+/** "JUN" — mês abreviado em pt-BR maiúsculo (sem depender de Intl) */
+export function monthShortUpper(date: Date): string {
+  return MESES_ABREV[date.getMonth()].toUpperCase();
+}
+
 /** "10 de mar." */
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr);

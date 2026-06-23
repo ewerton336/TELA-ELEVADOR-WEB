@@ -134,7 +134,7 @@ export function Dashboard() {
     error: weatherError,
   } = useQuery<WeatherData | null>({
     queryKey: ["weather", slug],
-    initialData: slug
+    placeholderData: slug
       ? (getCachedWeather(slug)?.days?.length ?? 0) > 0
         ? (getCachedWeather(slug) ?? undefined)
         : undefined
