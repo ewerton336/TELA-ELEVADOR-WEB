@@ -17,7 +17,7 @@ export const DigitalClock = memo(function DigitalClock({ predio }: DigitalClockP
         <div className="shrink-0 p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30">
           <Building2 className="w-5 h-5 text-blue-400" />
         </div>
-        <div className="hidden sm:block min-w-0 max-w-[9rem]">
+        <div className="block min-w-0 max-w-[9rem]">
           <p className="text-white font-display font-semibold text-base leading-[1.12]">
             {predio?.nome || "Carregando..."}
           </p>
