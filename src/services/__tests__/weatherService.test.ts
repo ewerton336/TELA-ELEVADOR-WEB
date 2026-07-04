@@ -63,4 +63,35 @@ describe("weatherService.fetchWeatherBySlug", () => {
 
     expect(segundo.days[0].weatherCode).toBe(81);
   });
+
+  it("normaliza o objeto current quando a API o retorna", async () => {
+    const comCurrent = {
+      ...makeWeather(0, "Céu limpo"),
+      current: {
+        temperature: 26,
+        apparentTemperature: 28,
+        humidity: 70,
+        windSpeed: 12.4,
+        weatherCode: 0,
+        weatherDescription: "Céu limpo",
+        weatherIcon: "☀️",
+        isDay: true,
+        lastUpdated: "2026-06-23T22:00:00Z",
+      },
+    };
+    mockRequestJson.mockResolvedValue(comCurrent as WeatherData);
+
+    const result = await fetchWeatherBySlug("gramado");
+
+    expect(result.current?.temperature).toBe(26);
+    expect(result.current?.weatherDescription).toBe("Céu limpo");
+  });
+
+  it("mantém current indefinido quando a API não o retorna", async () => {
+    mockRequestJson.mockResolvedValue(makeWeather(2, "Parcialmente nublado"));
+
+    const result = await fetchWeatherBySlug("gramado");
+
+    expect(result.current).toBeUndefined();
+  });
 });

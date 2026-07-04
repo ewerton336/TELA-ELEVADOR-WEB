@@ -87,23 +87,45 @@ export const WeatherCard = memo(function WeatherCard({
     const today = data.days[0];
 
     return (
-      <div className="glass-card rounded-lg px-3 py-1.5 weather-compact">
-        <div className="flex items-center gap-4 weather-compact-row">
+      <div className="glass-card rounded-lg px-2.5 py-1 weather-compact">
+        <div className="flex flex-row items-center gap-2">
+          {data.current && (
+            <div className="flex items-center gap-1.5">
+              <WeatherIcon
+                weatherCode={data.current.weatherCode}
+                fallbackEmoji={data.current.weatherIcon}
+                alt={data.current.weatherDescription}
+                sizePx={20}
+              />
+              <div className="flex flex-col leading-none min-w-0">
+                <span className="text-white/50 text-[9px] font-medium uppercase tracking-wide">Agora</span>
+                <div className="flex items-baseline gap-1 min-w-0">
+                  <span className="text-white font-bold text-sm tabular-nums">
+                    {data.current.temperature}°
+                  </span>
+                  <span className="text-white/50 text-[10px] truncate max-w-[68px]">
+                    {data.current.weatherDescription}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Hoje */}
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-1.5 ${data.current ? "border-l border-white/10 pl-2" : ""}`}>
             <WeatherIcon
               weatherCode={today.weatherCode}
               fallbackEmoji={today.weatherIcon}
               alt={today.weatherDescription}
-              sizePx={26}
+              sizePx={20}
             />
             <div className="flex flex-col leading-none">
-              <span className="text-white/60 text-xs font-medium uppercase">Hoje</span>
-              <div className="flex items-center gap-1">
-                <span className="text-white font-bold text-base tabular-nums">
+              <span className="text-white/50 text-[9px] font-medium uppercase tracking-wide">Hoje</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-white font-bold text-sm tabular-nums">
                   {today.temperatureMax}°
                 </span>
-                <span className="text-white/40 text-sm tabular-nums">
+                <span className="text-white/40 text-[11px] tabular-nums">
                   {today.temperatureMin}°
                 </span>
               </div>
@@ -112,20 +134,20 @@ export const WeatherCard = memo(function WeatherCard({
 
           {/* Amanhã */}
           {data.days[1] && (
-            <div className="weather-compact-amanha flex items-center gap-2 border-l border-white/10 pl-4">
+            <div className="flex items-center gap-1.5 border-l border-white/10 pl-2">
               <WeatherIcon
                 weatherCode={data.days[1].weatherCode}
                 fallbackEmoji={data.days[1].weatherIcon}
                 alt={data.days[1].weatherDescription}
-                sizePx={26}
+                sizePx={20}
               />
               <div className="flex flex-col leading-none">
-                <span className="text-white/50 text-xs font-medium uppercase">Amanhã</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-white/70 font-semibold text-base tabular-nums">
+                <span className="text-white/40 text-[9px] font-medium uppercase tracking-wide">Amanhã</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-white/70 font-semibold text-sm tabular-nums">
                     {data.days[1].temperatureMax}°
                   </span>
-                  <span className="text-white/35 text-sm tabular-nums">
+                  <span className="text-white/35 text-[11px] tabular-nums">
                     {data.days[1].temperatureMin}°
                   </span>
                 </div>

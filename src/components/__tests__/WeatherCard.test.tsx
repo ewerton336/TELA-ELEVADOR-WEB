@@ -194,6 +194,45 @@ describe("WeatherCard — dados incompletos", () => {
   });
 });
 
+// ── Bloco Agora (modo compacto) ──
+
+function makeCurrent(overrides: Partial<import("@/services/weatherService").WeatherCurrent> = {}) {
+  return {
+    temperature: 26,
+    apparentTemperature: 28,
+    humidity: 70,
+    windSpeed: 12,
+    weatherCode: 0,
+    weatherDescription: "Ensolarado",
+    weatherIcon: "☀️",
+    isDay: true,
+    lastUpdated: "2026-03-10T15:00:00.000Z",
+    ...overrides,
+  };
+}
+
+describe("WeatherCard — bloco Agora (compacto)", () => {
+  it("renderiza o rótulo 'Agora' quando há current", () => {
+    render(<WeatherCard data={makeWeatherData({ current: makeCurrent() })} compact />);
+    expect(screen.getByText("Agora")).toBeInTheDocument();
+  });
+
+  it("renderiza a temperatura atual quando há current", () => {
+    render(<WeatherCard data={makeWeatherData({ current: makeCurrent() })} compact />);
+    expect(screen.getByText("26°")).toBeInTheDocument();
+  });
+
+  it("renderiza a condição atual quando há current", () => {
+    render(<WeatherCard data={makeWeatherData({ current: makeCurrent() })} compact />);
+    expect(screen.getByText("Ensolarado")).toBeInTheDocument();
+  });
+
+  it("não renderiza 'Agora' quando current é ausente", () => {
+    render(<WeatherCard data={makeWeatherData()} compact />);
+    expect(screen.queryByText("Agora")).not.toBeInTheDocument();
+  });
+});
+
 // ── Módulo desativado ──
 
 describe("WeatherCard — módulo desativado (data null)", () => {

@@ -14,14 +14,42 @@ export interface WeatherDay {
   weatherIcon: string;
 }
 
+export interface WeatherCurrent {
+  temperature: number;
+  apparentTemperature: number;
+  humidity: number;
+  windSpeed: number;
+  weatherCode: number;
+  weatherDescription: string;
+  weatherIcon: string;
+  isDay: boolean;
+  lastUpdated: string;
+}
+
 export interface WeatherData {
   location: string;
+  current?: WeatherCurrent;
   days: WeatherDay[];
   lastUpdated: string;
 }
 
 function getCacheKeyForCity(slug: string): string {
   return `weather_${slug}`;
+}
+
+function normalizeCurrent(raw: any): WeatherCurrent | undefined {
+  if (!raw) return undefined;
+  return {
+    temperature: raw.temperature ?? 0,
+    apparentTemperature: raw.apparentTemperature ?? 0,
+    humidity: raw.humidity ?? 0,
+    windSpeed: raw.windSpeed ?? 0,
+    weatherCode: raw.weatherCode ?? 0,
+    weatherDescription: raw.weatherDescription ?? "Desconhecido",
+    weatherIcon: raw.weatherIcon ?? "❓",
+    isDay: raw.isDay ?? true,
+    lastUpdated: raw.lastUpdated ?? new Date().toISOString(),
+  };
 }
 
 export async function fetchWeatherBySlug(slug: string): Promise<WeatherData> {
@@ -38,6 +66,7 @@ export async function fetchWeatherBySlug(slug: string): Promise<WeatherData> {
     // Normalize response - ensure we have the right structure
     const normalizedData: WeatherData = {
       location: weatherData.location || "Localização desconhecida",
+      current: normalizeCurrent((weatherData as any).current),
       days: (weatherData.days || []).map((day: any) => ({
         date: day.date || "",
         dateFormatted: day.dateFormatted || "",
