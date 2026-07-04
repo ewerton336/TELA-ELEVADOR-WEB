@@ -88,31 +88,26 @@ export const WeatherCard = memo(function WeatherCard({
 
     return (
       <div className="glass-card rounded-lg px-2.5 py-1 weather-compact">
-        <div className="flex flex-row items-center gap-2">
+        <div className="flex flex-row items-center gap-1.5">
           {data.current && (
             <div className="flex items-center gap-1.5">
               <WeatherIcon
                 weatherCode={data.current.weatherCode}
                 fallbackEmoji={data.current.weatherIcon}
                 alt={data.current.weatherDescription}
-                sizePx={20}
+                sizePx={18}
               />
-              <div className="flex flex-col leading-none min-w-0">
+              <div className="flex flex-col leading-none">
                 <span className="text-white/50 text-[9px] font-medium uppercase tracking-wide">Agora</span>
-                <div className="flex items-baseline gap-1 min-w-0">
-                  <span className="text-white font-bold text-sm tabular-nums">
-                    {data.current.temperature}°
-                  </span>
-                  <span className="text-white/50 text-[10px] truncate max-w-[68px]">
-                    {data.current.weatherDescription}
-                  </span>
-                </div>
+                <span className="text-white font-bold text-sm tabular-nums">
+                  {data.current.temperature}°
+                </span>
               </div>
             </div>
           )}
 
           {/* Hoje */}
-          <div className={`flex items-center gap-1.5 ${data.current ? "border-l border-white/10 pl-2" : ""}`}>
+          <div className={`flex items-center gap-1.5 ${data.current ? "border-l border-white/10 pl-1.5" : ""}`}>
             <WeatherIcon
               weatherCode={today.weatherCode}
               fallbackEmoji={today.weatherIcon}
@@ -134,12 +129,12 @@ export const WeatherCard = memo(function WeatherCard({
 
           {/* Amanhã */}
           {data.days[1] && (
-            <div className="flex items-center gap-1.5 border-l border-white/10 pl-2">
+            <div className="weather-amanha flex items-center gap-1.5 border-l border-white/10 pl-1.5">
               <WeatherIcon
                 weatherCode={data.days[1].weatherCode}
                 fallbackEmoji={data.days[1].weatherIcon}
                 alt={data.days[1].weatherDescription}
-                sizePx={20}
+                sizePx={18}
               />
               <div className="flex flex-col leading-none">
                 <span className="text-white/40 text-[9px] font-medium uppercase tracking-wide">Amanhã</span>

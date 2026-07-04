@@ -222,9 +222,9 @@ describe("WeatherCard — bloco Agora (compacto)", () => {
     expect(screen.getByText("26°")).toBeInTheDocument();
   });
 
-  it("renderiza a condição atual quando há current", () => {
+  it("renderiza o ícone da condição atual quando há current", () => {
     render(<WeatherCard data={makeWeatherData({ current: makeCurrent() })} compact />);
-    expect(screen.getByText("Ensolarado")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Ensolarado" })).toBeInTheDocument();
   });
 
   it("não renderiza 'Agora' quando current é ausente", () => {

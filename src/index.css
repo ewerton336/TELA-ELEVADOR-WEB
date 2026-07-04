@@ -372,6 +372,16 @@ html.perf-mode .clock-badge {
   transition: background-color 200ms ease;
 }
 
+.force-landscape .weather-amanha {
+  display: none;
+}
+
+@media (orientation: landscape) {
+  .elevator-screen:not(.force-portrait *) .weather-amanha {
+    display: none;
+  }
+}
+
 html.perf-mode .weather-card-header {
   background: rgba(30, 41, 59, 0.6);
 }
