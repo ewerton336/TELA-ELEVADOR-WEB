@@ -39,13 +39,41 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: "auto",
       devOptions: { enabled: false },
+      includeAssets: ["elevator.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Tela Elevador",
         short_name: "Tela Elevador",
+        description: "Painel informativo para telas de elevador",
+        lang: "pt-BR",
         start_url: "/",
+        scope: "/",
         display: "standalone",
         background_color: "#0f172a",
         theme_color: "#0f172a",
+        icons: [
+          {
+            src: "/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
