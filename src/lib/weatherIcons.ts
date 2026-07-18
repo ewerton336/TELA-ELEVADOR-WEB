@@ -42,14 +42,13 @@ const WMO_TO_ICON: Record<number, string> = {
 
 const BASE_PATH = "/weather";
 
-/**
- * Retorna a URL do ícone animado para um código WMO, ou `null` se o código
- * for desconhecido (nesse caso o chamador deve usar o emoji de fallback).
- */
 export function getWeatherIconUrl(
   weatherCode: number | null | undefined,
+  isDay: boolean = true,
 ): string | null {
   if (weatherCode == null) return null;
   const name = WMO_TO_ICON[weatherCode];
-  return name ? `${BASE_PATH}/${name}.svg` : null;
+  if (!name) return null;
+  const resolved = isDay ? name : name.replace("-day", "-night");
+  return `${BASE_PATH}/${resolved}.svg`;
 }

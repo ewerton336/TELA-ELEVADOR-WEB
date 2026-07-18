@@ -1,7 +1,8 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { WeatherData, WeatherDay } from "@/services/weatherService";
 import { WeatherIcon } from "@/components/WeatherIcon";
+import { useDaytime } from "@/hooks/useDaytime";
 import { MapPin, Thermometer } from "lucide-react";
 
 interface WeatherCardProps {
@@ -15,10 +16,12 @@ function ForecastRow({
   day,
   label,
   highlight,
+  isDay,
 }: {
   day: WeatherDay;
   label: string;
   highlight?: boolean;
+  isDay: boolean;
 }) {
   return (
     <div
@@ -26,9 +29,10 @@ function ForecastRow({
     >
       <WeatherIcon
         weatherCode={day.weatherCode}
+        isDay={isDay}
         fallbackEmoji={day.weatherIcon}
         alt={day.weatherDescription}
-        sizePx={36}
+        sizePx={44}
         className="weather-icon"
       />
 
@@ -53,11 +57,58 @@ function ForecastRow({
   );
 }
 
+const COMPACT_ICON_PX = 48;
+
+function CompactBlock({
+  label,
+  weatherCode,
+  isDay,
+  fallbackEmoji,
+  description,
+  divider,
+  dim,
+  className = "",
+  children,
+}: {
+  label: string;
+  weatherCode: number;
+  isDay: boolean;
+  fallbackEmoji: string;
+  description: string;
+  divider?: boolean;
+  dim?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center gap-0 ${divider ? "border-l border-white/10 pl-2" : ""} ${className}`}
+    >
+      <span
+        className={`${dim ? "text-white/40" : "text-white/55"} text-[9px] font-semibold uppercase tracking-wide leading-none`}
+      >
+        {label}
+      </span>
+      <WeatherIcon
+        weatherCode={weatherCode}
+        isDay={isDay}
+        fallbackEmoji={fallbackEmoji}
+        alt={description}
+        sizePx={COMPACT_ICON_PX}
+        className="weather-icon -my-1.5"
+      />
+      <div className="flex items-baseline gap-1 leading-none">{children}</div>
+    </div>
+  );
+}
+
 export const WeatherCard = memo(function WeatherCard({
   data,
   isLoading,
   compact = false,
 }: WeatherCardProps) {
+  const isDay = useDaytime();
+
   // ── Modo compacto (header) ──
   if (compact) {
     if (isLoading && !data) {
@@ -85,69 +136,59 @@ export const WeatherCard = memo(function WeatherCard({
     }
 
     const today = data.days[0];
+    const tomorrow = data.days[1];
 
     return (
       <div className="glass-card rounded-lg px-2.5 py-1 weather-compact">
-        <div className="flex flex-row items-center gap-1.5">
+        <div className="flex flex-row items-center gap-2">
           {data.current && (
-            <div className="flex items-center gap-1.5">
-              <WeatherIcon
-                weatherCode={data.current.weatherCode}
-                fallbackEmoji={data.current.weatherIcon}
-                alt={data.current.weatherDescription}
-                sizePx={18}
-              />
-              <div className="flex flex-col leading-none">
-                <span className="text-white/50 text-[9px] font-medium uppercase tracking-wide">Agora</span>
-                <span className="text-white font-bold text-sm tabular-nums">
-                  {data.current.temperature}°
-                </span>
-              </div>
-            </div>
+            <CompactBlock
+              label="Agora"
+              isDay={isDay}
+              weatherCode={data.current.weatherCode}
+              fallbackEmoji={data.current.weatherIcon}
+              description={data.current.weatherDescription}
+            >
+              <span className="text-white font-bold text-sm tabular-nums">
+                {data.current.temperature}°
+              </span>
+            </CompactBlock>
           )}
 
-          {/* Hoje */}
-          <div className={`flex items-center gap-1.5 ${data.current ? "border-l border-white/10 pl-1.5" : ""}`}>
-            <WeatherIcon
-              weatherCode={today.weatherCode}
-              fallbackEmoji={today.weatherIcon}
-              alt={today.weatherDescription}
-              sizePx={20}
-            />
-            <div className="flex flex-col leading-none">
-              <span className="text-white/50 text-[9px] font-medium uppercase tracking-wide">Hoje</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-white font-bold text-sm tabular-nums">
-                  {today.temperatureMax}°
-                </span>
-                <span className="text-white/40 text-[11px] tabular-nums">
-                  {today.temperatureMin}°
-                </span>
-              </div>
-            </div>
-          </div>
+          <CompactBlock
+            label="Hoje"
+            isDay={isDay}
+            weatherCode={today.weatherCode}
+            fallbackEmoji={today.weatherIcon}
+            description={today.weatherDescription}
+            divider={!!data.current}
+          >
+            <span className="text-white font-bold text-sm tabular-nums">
+              {today.temperatureMax}°
+            </span>
+            <span className="text-white/45 text-[11px] tabular-nums">
+              {today.temperatureMin}°
+            </span>
+          </CompactBlock>
 
-          {/* Amanhã */}
-          {data.days[1] && (
-            <div className="weather-amanha flex items-center gap-1.5 border-l border-white/10 pl-1.5">
-              <WeatherIcon
-                weatherCode={data.days[1].weatherCode}
-                fallbackEmoji={data.days[1].weatherIcon}
-                alt={data.days[1].weatherDescription}
-                sizePx={18}
-              />
-              <div className="flex flex-col leading-none">
-                <span className="text-white/40 text-[9px] font-medium uppercase tracking-wide">Amanhã</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-white/70 font-semibold text-sm tabular-nums">
-                    {data.days[1].temperatureMax}°
-                  </span>
-                  <span className="text-white/35 text-[11px] tabular-nums">
-                    {data.days[1].temperatureMin}°
-                  </span>
-                </div>
-              </div>
-            </div>
+          {tomorrow && (
+            <CompactBlock
+              className="weather-amanha"
+              label="Amanhã"
+              dim
+              isDay={isDay}
+              weatherCode={tomorrow.weatherCode}
+              fallbackEmoji={tomorrow.weatherIcon}
+              description={tomorrow.weatherDescription}
+              divider
+            >
+              <span className="text-white/75 font-semibold text-sm tabular-nums">
+                {tomorrow.temperatureMax}°
+              </span>
+              <span className="text-white/40 text-[11px] tabular-nums">
+                {tomorrow.temperatureMin}°
+              </span>
+            </CompactBlock>
           )}
         </div>
       </div>
@@ -206,6 +247,7 @@ export const WeatherCard = memo(function WeatherCard({
               day={day}
               label={dayLabels[i] ?? day.dayName}
               highlight={i === 0}
+              isDay={isDay}
             />
           ))}
         </div>

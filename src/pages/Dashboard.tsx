@@ -24,6 +24,7 @@ import { getMessages, Message } from "@/services/messageService";
 import { getTickerMensagens, TickerMensagem } from "@/services/tickerService";
 import {
   getPredio,
+  getCachedPredio,
   OrientationMode,
   Predio,
   ScreenModules,
@@ -49,7 +50,9 @@ export function Dashboard() {
   const [tickerMensagens, setTickerMensagens] = useState<TickerMensagem[]>([]);
   const [orientationMode, setOrientationMode] =
     useState<OrientationMode>("auto");
-  const [predio, setPredio] = useState<Predio | null>(null);
+  const [predio, setPredio] = useState<Predio | null>(() =>
+    getCachedPredio(slug ?? "gramado"),
+  );
   const [modules, setModules] = useState<ScreenModules>(DEFAULT_MODULES);
 
   useEffect(() => {

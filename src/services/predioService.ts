@@ -1,4 +1,7 @@
+import { getCache, setCache } from "@/lib/cache";
 import { requestJson } from "@/services/apiClient";
+
+const CACHE_TTL_MINUTES = 60 * 24;
 
 export type ScreenModules = {
   buildingNotice: boolean;
@@ -26,11 +29,31 @@ export type Predio = {
 
 export type OrientationMode = "auto" | "portrait" | "landscape";
 
+function getCacheKeyForSlug(slug: string): string {
+  return `predio_${slug}`;
+}
+
 export async function getPredio(slug: string): Promise<Predio> {
-  return await requestJson<Predio>(
-    slug,
-    "/predio",
-    { method: "GET" },
-    "getPredio",
-  );
+  const cacheKey = getCacheKeyForSlug(slug);
+  try {
+    const predio = await requestJson<Predio>(
+      slug,
+      "/predio",
+      { method: "GET" },
+      "getPredio",
+    );
+    setCache(cacheKey, predio, CACHE_TTL_MINUTES);
+    return predio;
+  } catch (error) {
+    const cached = getCache<Predio>(cacheKey);
+    if (cached) {
+      console.warn(`Usando predio em cache para ${slug}:`, error);
+      return cached;
+    }
+    throw error;
+  }
+}
+
+export function getCachedPredio(slug: string): Predio | null {
+  return getCache<Predio>(getCacheKeyForSlug(slug));
 }

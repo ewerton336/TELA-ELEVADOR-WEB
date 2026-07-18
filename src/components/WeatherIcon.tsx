@@ -17,6 +17,7 @@ function withExplicitSize(markup: string, size: number): string {
 interface WeatherIconProps {
   /** Código WMO (Open-Meteo) da condição do tempo. */
   weatherCode: number;
+  isDay?: boolean;
   /** Emoji exibido enquanto carrega, se não houver ícone, ou se o SVG falhar. */
   fallbackEmoji?: string;
   /** Tamanho do ícone em pixels. */
@@ -34,12 +35,13 @@ interface WeatherIconProps {
  */
 export function WeatherIcon({
   weatherCode,
+  isDay = true,
   fallbackEmoji = "❓",
   sizePx = 36,
   alt = "Condição do tempo",
   className = "",
 }: WeatherIconProps) {
-  const url = getWeatherIconUrl(weatherCode);
+  const url = getWeatherIconUrl(weatherCode, isDay);
   const [markup, setMarkup] = useState<string | null>(() =>
     url ? svgMarkupCache.get(url) ?? null : null,
   );

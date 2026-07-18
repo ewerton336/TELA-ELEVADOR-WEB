@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { WeatherCard } from "../WeatherCard";
 import type { WeatherData, WeatherDay } from "@/services/weatherService";
+
+vi.mock("@/hooks/useDaytime", () => ({ useDaytime: () => true }));
 
 // ── Helpers ──
 
