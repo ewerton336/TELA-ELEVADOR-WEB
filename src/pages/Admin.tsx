@@ -12,6 +12,7 @@ import {
   MessagesSection,
   TickerSection,
 } from "@/components/admin";
+import { useScrollablePage } from "@/hooks/useScrollablePage";
 
 function getRoleFromToken(token: string | null): string | null {
   if (!token) return null;
@@ -35,6 +36,7 @@ function getRoleFromToken(token: string | null): string | null {
 }
 
 export function Admin() {
+  useScrollablePage();
   const navigate = useNavigate();
   const { slug } = useParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -88,8 +90,8 @@ export function Admin() {
 
   return (
     <div
-      className="overflow-y-auto overscroll-contain bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 pb-24 sm:p-4"
-      style={{ height: "100dvh" }}
+      className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 pb-24 sm:p-4"
+      style={{ minHeight: "100dvh" }}
     >
       <AdminHeader slug={resolvedSlug} onLogout={handleLogout} />
       <OrientationModeCard slug={resolvedSlug} token={token} />

@@ -58,6 +58,15 @@
   #root {
     @apply h-full overflow-hidden;
   }
+  /* Páginas administrativas (master/admin) usam o scroll nativo do documento,
+     diferente do kiosk que fica travado. Ativado por useScrollablePage(). */
+  html.allow-scroll,
+  html.allow-scroll body,
+  html.allow-scroll #root {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
