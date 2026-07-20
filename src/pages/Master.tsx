@@ -25,8 +25,10 @@ import { CidadeSelector } from "@/components/CidadeSelector";
 import { ScreenMonitor } from "@/components/ScreenMonitor";
 import { FormDialog } from "@/components/FormDialog";
 import { CrudList } from "@/components/CrudList";
+import { useScrollablePage } from "@/hooks/useScrollablePage";
 
 export default function Master() {
+  useScrollablePage();
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [token, setToken] = useState<string | null>(null);
@@ -255,8 +257,8 @@ export default function Master() {
 
   return (
     <div
-      className="overflow-y-auto overscroll-contain bg-slate-50 p-4 pb-24 sm:p-8"
-      style={{ height: "100dvh" }}
+      className="bg-slate-50 p-4 pb-24 sm:p-8"
+      style={{ minHeight: "100dvh" }}
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
