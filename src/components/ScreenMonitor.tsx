@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   HubConnectionBuilder,
   HubConnection,
@@ -193,6 +193,48 @@ function hasStaleHeartbeat(screen: ScreenInfo): boolean {
   return diff > 120_000; // 2 minutos
 }
 
+/* ── Persistência local do monitor ──────────────────────────────────────────
+   O backend retém telas offline por tempo limitado. Para que elas fiquem
+   INDEFINIDAMENTE na lista, guardamos localmente todas as telas já vistas e as
+   mesclamos com o snapshot ao vivo. O usuário pode ocultar (X) telas que não
+   quer ver — isso só some da exibição, sem apagar nada. */
+const KNOWN_SCREENS_KEY = "monitor:knownScreens";
+const DISMISSED_SCREENS_KEY = "monitor:dismissedScreens";
+
+function loadKnownScreens(): Record<string, ScreenInfo> {
+  try {
+    const raw = localStorage.getItem(KNOWN_SCREENS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, ScreenInfo>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveKnownScreens(map: Record<string, ScreenInfo>): void {
+  try {
+    localStorage.setItem(KNOWN_SCREENS_KEY, JSON.stringify(map));
+  } catch {
+    // localStorage cheio/indisponível — apenas ignora.
+  }
+}
+
+function loadDismissedScreens(): string[] {
+  try {
+    const raw = localStorage.getItem(DISMISSED_SCREENS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDismissedScreens(ids: string[]): void {
+  try {
+    localStorage.setItem(DISMISSED_SCREENS_KEY, JSON.stringify(ids));
+  } catch {
+    // ignora
+  }
+}
+
 export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const [screens, setScreens] = useState<ScreenInfo[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -213,6 +255,43 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const captureTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const detailsTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screenshotUrlsRef = useRef<Map<string, string>>(new Map());
+
+  // Registro local: telas conhecidas (retidas indefinidamente na lista) e as
+  // que o usuário ocultou. Persistidos em localStorage.
+  const [knownScreens, setKnownScreens] = useState<Record<string, ScreenInfo>>(
+    () => loadKnownScreens(),
+  );
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(
+    () => new Set(loadDismissedScreens()),
+  );
+
+  const dismissScreen = useCallback((deviceId: string) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.add(deviceId);
+      saveDismissedScreens(Array.from(next));
+      return next;
+    });
+  }, []);
+
+  const restoreDismissed = useCallback(() => {
+    setDismissedIds(() => {
+      saveDismissedScreens([]);
+      return new Set();
+    });
+  }, []);
+
+  // Lembra localmente toda tela já vista, para mantê-la na lista mesmo depois
+  // que o backend deixar de retê-la.
+  useEffect(() => {
+    if (screens.length === 0) return;
+    setKnownScreens((prev) => {
+      const next = { ...prev };
+      for (const s of screens) next[s.deviceId] = s;
+      saveKnownScreens(next);
+      return next;
+    });
+  }, [screens]);
 
   // Atualiza (merge) a data/hora do último print/detalhes de uma tela.
   const mergeCaptureTime = useCallback((deviceId: string, patch: CaptureTimes) => {
@@ -499,21 +578,40 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
     };
   }, [token]);
 
-  // Agrupar por slug
-  const grouped = screens.reduce<Record<string, ScreenInfo[]>>((acc, s) => {
-    if (!acc[s.slug]) acc[s.slug] = [];
-    acc[s.slug].push(s);
-    return acc;
-  }, {});
+  // Mescla o snapshot ao vivo com as telas conhecidas (retidas localmente).
+  // Telas que só existem no registro local aparecem como offline.
+  const mergedScreens = useMemo(() => {
+    const liveIds = new Set(screens.map((s) => s.deviceId));
+    const registryOnly = Object.values(knownScreens)
+      .filter((s) => !liveIds.has(s.deviceId))
+      .map((s) => ({ ...s, connected: false }));
+    return [...screens, ...registryOnly];
+  }, [screens, knownScreens]);
 
-  const onlineCount = screens.filter((s) => s.connected).length;
-  const offlineCount = screens.length - onlineCount;
+  // Telas efetivamente exibidas (sem as ocultadas pelo usuário).
+  const visibleScreens = useMemo(
+    () => mergedScreens.filter((s) => !dismissedIds.has(s.deviceId)),
+    [mergedScreens, dismissedIds],
+  );
+
+  // Agrupar por slug
+  const grouped = visibleScreens.reduce<Record<string, ScreenInfo[]>>(
+    (acc, s) => {
+      if (!acc[s.slug]) acc[s.slug] = [];
+      acc[s.slug].push(s);
+      return acc;
+    },
+    {},
+  );
+
+  const onlineCount = visibleScreens.filter((s) => s.connected).length;
+  const offlineCount = visibleScreens.length - onlineCount;
 
   // "Mais recente" = maior build entre o do próprio master e o de todas as telas.
   // Evita falso "Desatualizada" quando a aba do master está num build antigo.
   const latestVersion = computeLatestVersion([
     __APP_VERSION__,
-    ...screens.map((s) => s.appVersion),
+    ...mergedScreens.map((s) => s.appVersion),
   ]);
 
   // Marca otimisticamente uma ação como agendada (badge aparece na hora; o
@@ -652,6 +750,16 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                 </span>
               )}
             </p>
+            {dismissedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={restoreDismissed}
+                className="mt-0.5 text-xs text-slate-500 underline hover:text-slate-700"
+              >
+                {dismissedIds.size} tela{dismissedIds.size !== 1 ? "s" : ""}{" "}
+                oculta{dismissedIds.size !== 1 ? "s" : ""} — reexibir
+              </button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -688,7 +796,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
         <div className="text-center text-slate-500 py-8">
           Carregando telas...
         </div>
-      ) : screens.length === 0 ? (
+      ) : visibleScreens.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-slate-500">
             <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -729,10 +837,19 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                       return (
                         <div
                           key={screen.deviceId}
-                          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border ${
+                          className={`relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 pr-9 rounded-lg border ${
                             online ? "bg-slate-50" : "bg-slate-100/70"
                           }`}
                         >
+                          <button
+                            type="button"
+                            onClick={() => dismissScreen(screen.deviceId)}
+                            title="Ocultar esta tela da lista (não apaga; some só da exibição)"
+                            aria-label="Ocultar tela"
+                            className="absolute top-1.5 right-1.5 p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                           <div className="flex items-center gap-3 min-w-0">
                             <div
                               className={`w-3 h-3 rounded-full flex-shrink-0 ${
