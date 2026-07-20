@@ -12,6 +12,7 @@ import { NoticiaInterna, getNoticiasInternas } from "@/services/noticiaInternaSe
 import { getPredioHubUrl, buildBackendUrl } from "@/lib/backendUrl";
 import { getScreenDeviceId } from "@/lib/screenDeviceId";
 import { setCache, clearAllCache } from "@/lib/cache";
+import { logger } from "@/lib/logger";
 
 /**
  * Coleta os detalhes da tela onde a aplicação está rodando (resolução, zoom,
@@ -100,6 +101,33 @@ function collectScreenDetails() {
     userAgent: navigator.userAgent,
     platform: navigator.platform,
     language: navigator.language,
+    // Uso de memória JS (Chromium) — permite acompanhar, pelo master, se o
+    // heap da tela cresce ao longo do tempo (indício de acúmulo/vazamento).
+    performance: (() => {
+      const perf = performance as Performance & {
+        memory?: {
+          usedJSHeapSize: number;
+          totalJSHeapSize: number;
+          jsHeapSizeLimit: number;
+        };
+      };
+      const mem = perf.memory;
+      return {
+        usedJSHeapSize: mem?.usedJSHeapSize ?? null,
+        totalJSHeapSize: mem?.totalJSHeapSize ?? null,
+        jsHeapSizeLimit: mem?.jsHeapSizeLimit ?? null,
+        // segundos desde que a página carregou (uptime da aba/tela)
+        uptimeSeconds: Math.round(performance.now() / 1000),
+      };
+    })(),
+    hardware: {
+      deviceMemory:
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null,
+      hardwareConcurrency: navigator.hardwareConcurrency ?? null,
+      // Reflete se o modo de desempenho está ativo nesta tela.
+      perfMode: docEl?.classList.contains("perf-mode") ?? false,
+    },
   };
 }
 
@@ -167,7 +195,7 @@ export function useSignalR({
   // Fallback de polling — ativa quando SignalR desconecta
   const startFallbackPolling = useCallback(() => {
     if (fallbackTimerRef.current) return; // já ativo
-    console.log("[SignalR] Fallback polling ativado");
+    logger.log("[SignalR] Fallback polling ativado");
 
     fallbackTimerRef.current = setInterval(async () => {
       try {
@@ -195,7 +223,7 @@ export function useSignalR({
 
   const stopFallbackPolling = useCallback(() => {
     if (fallbackTimerRef.current) {
-      console.log("[SignalR] Fallback polling desativado");
+      logger.log("[SignalR] Fallback polling desativado");
       clearInterval(fallbackTimerRef.current);
       fallbackTimerRef.current = null;
     }
@@ -251,7 +279,7 @@ export function useSignalR({
           stopFallbackPolling();
           await syncAfterReconnect();
           retryTimerRef.current = null;
-          console.log("[SignalR] Reconexão manual bem-sucedida");
+          logger.log("[SignalR] Reconexão manual bem-sucedida");
         } catch {
           // Tenta novamente em 15s
           retryTimerRef.current = setTimeout(attempt, 15_000);
@@ -276,7 +304,7 @@ export function useSignalR({
     connection.on("ReceiveAvisos", (avisos: unknown) => {
       if (Array.isArray(avisos)) {
         const mapped = mapAvisosToMessages(avisos);
-        console.log("[SignalR] Avisos recebidos:", mapped.length);
+        logger.log("[SignalR] Avisos recebidos:", mapped.length);
         // Atualiza cache para que fallback polling use dados recentes
         setCache(`messages:${slug}`, mapped, 24 * 60);
         onAvisosRef.current(mapped);
@@ -285,33 +313,33 @@ export function useSignalR({
 
     connection.on("ReceiveTickerMensagens", (data: unknown) => {
       if (Array.isArray(data)) {
-        console.log("[SignalR] Ticker mensagens recebidas:", data.length);
+        logger.log("[SignalR] Ticker mensagens recebidas:", data.length);
         setCache(`ticker:${slug}`, data, 24 * 60);
         onTickerMensagensRef.current?.(data as TickerMensagem[]);
       }
     });
 
     connection.on("ReceiveOrientation", (mode: string) => {
-      console.log("[SignalR] Orientação recebida:", mode);
+      logger.log("[SignalR] Orientação recebida:", mode);
       onOrientationRef.current(mode as OrientationMode);
     });
 
     connection.on("NoticiasInternasChanged", (noticias: unknown) => {
       if (Array.isArray(noticias)) {
-        console.log("[SignalR] Notícias internas recebidas:", noticias.length);
+        logger.log("[SignalR] Notícias internas recebidas:", noticias.length);
         onNoticiasInternasRef.current?.(noticias as NoticiaInterna[]);
       }
     });
 
     connection.on("ReceiveModules", (modules: unknown) => {
       if (modules && typeof modules === "object") {
-        console.log("[SignalR] Módulos recebidos:", modules);
+        logger.log("[SignalR] Módulos recebidos:", modules);
         onModulesRef.current?.(modules as ScreenModules);
       }
     });
 
     connection.on("ForceRefresh", async () => {
-      console.log("[SignalR] ForceRefresh recebido — limpando cache e recarregando");
+      logger.log("[SignalR] ForceRefresh recebido — limpando cache e recarregando");
       try {
         clearAllCache();
         if ("serviceWorker" in navigator) {
@@ -381,13 +409,13 @@ export function useSignalR({
 
     // --- Handlers de conexão ---
     connection.onreconnecting(() => {
-      console.log("[SignalR] Reconectando...");
+      logger.log("[SignalR] Reconectando...");
       setIsConnected(false);
       startFallbackPolling();
     });
 
     connection.onreconnected(async () => {
-      console.log("[SignalR] Reconectado, re-entrando no grupo");
+      logger.log("[SignalR] Reconectado, re-entrando no grupo");
       setIsConnected(true);
       stopFallbackPolling();
       // Cancela retry manual para evitar JoinPredio duplicado
@@ -400,7 +428,7 @@ export function useSignalR({
     });
 
     connection.onclose(() => {
-      console.log("[SignalR] Conexão fechada");
+      logger.log("[SignalR] Conexão fechada");
       setIsConnected(false);
       startFallbackPolling();
       // Inicia loop de reconexão infinita (WiFi do elevador)
@@ -415,9 +443,9 @@ export function useSignalR({
         connectionRef.current = connection;
         setIsConnected(true);
         startTimeRef.current = Date.now();
-        console.log("[SignalR] Conectado ao grupo:", slug);
+        logger.log("[SignalR] Conectado ao grupo:", slug);
       } catch (err) {
-        console.error("[SignalR] Erro ao conectar:", err);
+        logger.error("[SignalR] Erro ao conectar:", err);
         setIsConnected(false);
         startFallbackPolling();
         startManualRetry(connection, deviceId);

@@ -1,5 +1,6 @@
 import { getCache, setCache } from "@/lib/cache";
 import { requestJson } from "@/services/apiClient";
+import { logger } from "@/lib/logger";
 
 const CACHE_TTL_MINUTES = 60 * 24;
 
@@ -47,7 +48,7 @@ export async function getPredio(slug: string): Promise<Predio> {
   } catch (error) {
     const cached = getCache<Predio>(cacheKey);
     if (cached) {
-      console.warn(`Usando predio em cache para ${slug}:`, error);
+      logger.warn(`Usando predio em cache para ${slug}:`, error);
       return cached;
     }
     throw error;

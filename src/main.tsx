@@ -1,7 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { applyPerfMode } from "./lib/perfMode";
 import "./index.css";
+
+// Ativa o modo de desempenho ANTES do primeiro paint em hardware fraco
+// (media players de elevador), evitando flash de efeitos pesados.
+applyPerfMode();
 
 if ("serviceWorker" in navigator) {
   setInterval(

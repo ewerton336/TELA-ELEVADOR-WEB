@@ -89,10 +89,14 @@ export function useOfflineSync() {
   useEffect(() => {
     const pollConnectivity = async () => {
       const isReallyOnline = await checkRealConnectivity();
-      setState((prev) => ({
-        ...prev,
-        isOnline: isReallyOnline,
-      }));
+      // Só atualiza o estado quando o valor realmente muda. Retornar `prev`
+      // faz o React pular o re-render — sem isso, o Dashboard inteiro
+      // re-renderizava a cada 30s mesmo com a conectividade estável.
+      setState((prev) =>
+        prev.isOnline === isReallyOnline
+          ? prev
+          : { ...prev, isOnline: isReallyOnline },
+      );
     };
 
     pollConnectivity();
