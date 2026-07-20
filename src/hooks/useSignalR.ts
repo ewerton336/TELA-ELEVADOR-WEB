@@ -101,6 +101,33 @@ function collectScreenDetails() {
     userAgent: navigator.userAgent,
     platform: navigator.platform,
     language: navigator.language,
+    // Uso de memória JS (Chromium) — permite acompanhar, pelo master, se o
+    // heap da tela cresce ao longo do tempo (indício de acúmulo/vazamento).
+    performance: (() => {
+      const perf = performance as Performance & {
+        memory?: {
+          usedJSHeapSize: number;
+          totalJSHeapSize: number;
+          jsHeapSizeLimit: number;
+        };
+      };
+      const mem = perf.memory;
+      return {
+        usedJSHeapSize: mem?.usedJSHeapSize ?? null,
+        totalJSHeapSize: mem?.totalJSHeapSize ?? null,
+        jsHeapSizeLimit: mem?.jsHeapSizeLimit ?? null,
+        // segundos desde que a página carregou (uptime da aba/tela)
+        uptimeSeconds: Math.round(performance.now() / 1000),
+      };
+    })(),
+    hardware: {
+      deviceMemory:
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null,
+      hardwareConcurrency: navigator.hardwareConcurrency ?? null,
+      // Reflete se o modo de desempenho está ativo nesta tela.
+      perfMode: docEl?.classList.contains("perf-mode") ?? false,
+    },
   };
 }
 

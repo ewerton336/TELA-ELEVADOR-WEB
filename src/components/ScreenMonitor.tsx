@@ -123,6 +123,53 @@ function formatScreenDetailRows(
     { label: "Header", value: rectStr(d.layout?.dashboardHeader) },
     { label: "Ticker (rodapé)", value: rectStr(d.layout?.newsTicker) },
     { label: "Coluna avisos", value: rectStr(d.layout?.avisos) },
+    {
+      label: "RAM JS usada",
+      value: (() => {
+        const used = d.performance?.usedJSHeapSize;
+        const limit = d.performance?.jsHeapSizeLimit;
+        if (typeof used !== "number") return "—";
+        const base = formatBytes(used);
+        return typeof limit === "number" && limit > 0
+          ? `${base} (${Math.round((used / limit) * 100)}%)`
+          : base;
+      })(),
+    },
+    { label: "RAM JS total", value: formatBytes(d.performance?.totalJSHeapSize) },
+    {
+      label: "Limite de heap JS",
+      value: formatBytes(d.performance?.jsHeapSizeLimit),
+    },
+    {
+      label: "Tempo desde carregamento",
+      value:
+        typeof d.performance?.uptimeSeconds === "number"
+          ? formatUptime(d.performance.uptimeSeconds)
+          : "—",
+    },
+    {
+      label: "Memória do dispositivo",
+      value:
+        d.hardware?.deviceMemory != null
+          ? `${d.hardware.deviceMemory} GB`
+          : "—",
+    },
+    {
+      label: "Núcleos de CPU",
+      value:
+        d.hardware?.hardwareConcurrency != null
+          ? String(d.hardware.hardwareConcurrency)
+          : "—",
+    },
+    {
+      label: "Modo desempenho",
+      value:
+        d.hardware?.perfMode === true
+          ? "Ativo"
+          : d.hardware?.perfMode === false
+            ? "Desligado"
+            : "—",
+    },
   ];
 }
 
@@ -131,6 +178,12 @@ function rectStr(
 ): string {
   if (!r) return "—";
   return `${r.w}×${r.h} @ (${r.x}, ${r.y})`;
+}
+
+// Formata bytes em MB (para o uso de memória JS reportado pela tela).
+function formatBytes(bytes: unknown): string {
+  if (typeof bytes !== "number" || !Number.isFinite(bytes)) return "—";
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // Heartbeat parado por muito tempo, mesmo com conexão ativa (tela travada)
