@@ -34,6 +34,7 @@ import {
   getNoticiasInternas,
   NoticiaInterna,
 } from "@/services/noticiaInternaService";
+import { logger } from "@/lib/logger";
 
 export function Dashboard() {
   const { isSyncing } = useOfflineSync();
@@ -69,7 +70,7 @@ export function Dashboard() {
     onOrientationReceived: (mode) => {
       setOrientationMode((prev) => {
         if (prev !== mode) {
-          console.log(`[Dashboard] Orientação alterada: ${prev} → ${mode}`);
+          logger.log(`[Dashboard] Orientação alterada: ${prev} → ${mode}`);
         }
         return mode;
       });
@@ -88,7 +89,7 @@ export function Dashboard() {
         setOrientationMode(predioData.orientationMode ?? "auto");
         if (predioData.modules) setModules(predioData.modules);
       } catch (err) {
-        console.error("Erro ao carregar predio:", err);
+        logger.error("Erro ao carregar predio:", err);
       }
     };
     loadPredio();
@@ -118,13 +119,13 @@ export function Dashboard() {
           setMessages(msgs);
         }
       } catch (err) {
-        console.error("Erro ao carregar mensagens:", err);
+        logger.error("Erro ao carregar mensagens:", err);
       }
       try {
         const ticker = await getTickerMensagens(slug ?? "gramado");
         setTickerMensagens(ticker);
       } catch (err) {
-        console.error("Erro ao carregar ticker:", err);
+        logger.error("Erro ao carregar ticker:", err);
       }
     };
     loadInitial();
@@ -170,10 +171,10 @@ export function Dashboard() {
   // Log para debug
   useEffect(() => {
     if (weatherError) {
-      console.error("Erro ao carregar clima:", weatherError);
+      logger.error("Erro ao carregar clima:", weatherError);
     }
     if (weatherData) {
-      console.log("Clima carregado:", weatherData);
+      logger.log("Clima carregado:", weatherData);
     }
   }, [weatherData, weatherError]);
 
@@ -213,11 +214,11 @@ export function Dashboard() {
   // Log para debug de notícias
   useEffect(() => {
     if (newsError) {
-      console.error("Erro ao carregar notícias:", newsError);
+      logger.error("Erro ao carregar notícias:", newsError);
     }
     if (newsData) {
       const total = Array.isArray(newsData.items) ? newsData.items.length : 0;
-      console.log("Notícias carregadas:", total, "itens");
+      logger.log("Notícias carregadas:", total, "itens");
     }
   }, [newsData, newsError]);
 

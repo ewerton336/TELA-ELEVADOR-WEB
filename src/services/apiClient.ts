@@ -1,4 +1,5 @@
 import { buildBackendUrl } from "@/lib/backendUrl";
+import { logger } from "@/lib/logger";
 
 /** Evento global emitido quando uma requisição admin retorna 401 (sessão expirada). */
 export const ADMIN_UNAUTHORIZED_EVENT = "admin-unauthorized";
@@ -54,7 +55,7 @@ export async function requestJson<T>(
           : undefined,
     };
     const error = new Error(`HTTP ${res.status}`);
-    console.error(`[apiClient] ${label} failed:`, details);
+    logger.error(`[apiClient] ${label} failed:`, details);
     (error as Error & { details?: ApiErrorDetails }).details = details;
     throw error;
   }
@@ -67,7 +68,7 @@ export async function requestJson<T>(
       body: text.slice(0, 500),
     };
     const error = new Error("Invalid JSON response");
-    console.error(`[apiClient] ${label} invalid json:`, details);
+    logger.error(`[apiClient] ${label} invalid json:`, details);
     (error as Error & { details?: ApiErrorDetails }).details = details;
     throw error;
   }
@@ -111,7 +112,7 @@ export async function requestAdminJson<T>(
           : undefined,
     };
     const error = new Error(`HTTP ${res.status}`);
-    console.error(`[apiClient] ${label} failed:`, details);
+    logger.error(`[apiClient] ${label} failed:`, details);
     (error as Error & { details?: ApiErrorDetails }).details = details;
     throw error;
   }

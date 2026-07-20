@@ -1,5 +1,6 @@
 import { getCache, setCache, isCacheExpired } from "@/lib/cache";
 import { requestJson } from "@/services/apiClient";
+import { logger } from "@/lib/logger";
 
 const CACHE_TTL_MINUTES = 120; // 2 horas
 
@@ -90,7 +91,7 @@ export async function fetchWeatherBySlug(slug: string): Promise<WeatherData> {
     // Se falhar, tenta retornar do cache mesmo expirado
     const cached = getCache<WeatherData>(cacheKey);
     if (cached) {
-      console.warn(`Usando cache expirado para ${slug}:`, error);
+      logger.warn(`Usando cache expirado para ${slug}:`, error);
       return cached;
     }
 

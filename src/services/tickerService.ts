@@ -1,5 +1,6 @@
 import { getCache, setCache } from "@/lib/cache";
 import { requestJson } from "@/services/apiClient";
+import { logger } from "@/lib/logger";
 
 const CACHE_KEY = "ticker";
 const CACHE_TTL_MINUTES = 24 * 60;
@@ -30,7 +31,7 @@ export async function getTickerMensagens(
     setCache(getCacheKey(slug), list, CACHE_TTL_MINUTES);
     return list;
   } catch (err) {
-    console.error("[tickerService] getTickerMensagens failed:", err);
+    logger.error("[tickerService] getTickerMensagens failed:", err);
     const cached = getCache<TickerMensagem[]>(getCacheKey(slug));
     if (cached) return cached;
     return [];

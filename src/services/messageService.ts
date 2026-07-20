@@ -1,5 +1,6 @@
 import { getCache, setCache } from "@/lib/cache";
 import { requestJson } from "@/services/apiClient";
+import { logger } from "@/lib/logger";
 
 const CACHE_KEY = "messages";
 const CACHE_TTL_MINUTES = 24 * 60;
@@ -57,7 +58,7 @@ export async function getMessages(slug: string): Promise<Message[] | null> {
     setCache(getCacheKey(slug), list, CACHE_TTL_MINUTES);
     return list;
   } catch (err) {
-    console.error("[messageService] getMessages failed:", err);
+    logger.error("[messageService] getMessages failed:", err);
     const cached = getCache<Message[]>(getCacheKey(slug));
     if (cached) return cached;
     return null;
