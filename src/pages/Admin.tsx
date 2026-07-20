@@ -87,7 +87,10 @@ export function Admin() {
   }
 
   return (
-    <div className="min-h-screen max-h-screen overflow-y-auto bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 sm:p-4">
+    <div
+      className="overflow-y-auto overscroll-contain bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 pb-24 sm:p-4"
+      style={{ height: "100dvh" }}
+    >
       <AdminHeader slug={resolvedSlug} onLogout={handleLogout} />
       <OrientationModeCard slug={resolvedSlug} token={token} />
       <ScreenModulesCard slug={resolvedSlug} token={token} />

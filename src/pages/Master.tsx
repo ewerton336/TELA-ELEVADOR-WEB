@@ -254,7 +254,10 @@ export default function Master() {
   }
 
   return (
-    <div className="min-h-screen max-h-screen overflow-y-auto bg-slate-50 p-4 sm:p-8">
+    <div
+      className="overflow-y-auto overscroll-contain bg-slate-50 p-4 pb-24 sm:p-8"
+      style={{ height: "100dvh" }}
+    >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
           <h1 className="text-2xl sm:text-3xl font-bold">Painel Master</h1>
