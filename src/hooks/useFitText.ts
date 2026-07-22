@@ -14,13 +14,26 @@ export function useFitText(dep: unknown, min = 12) {
     const fit = () => {
       raf = 0;
       el.style.fontSize = "";
-      let size = parseFloat(getComputedStyle(el).fontSize) || 22;
-      let guard = 0;
-      while (size > min && el.scrollHeight > box.clientHeight && guard < 120) {
-        size -= 1;
-        el.style.fontSize = `${size}px`;
-        guard += 1;
+      const initial = parseFloat(getComputedStyle(el).fontSize) || 22;
+      // Se já cabe no tamanho natural, não mexe (0 leitura de layout extra).
+      if (el.scrollHeight <= box.clientHeight) return;
+
+      // Busca binária pelo maior fontSize que cabe. O laço linear anterior
+      // (size -= 1) forçava até 120 layouts síncronos por frame — um travão de
+      // ~400ms num media player fraco a cada texto que montava. A binária faz
+      // ~8 leituras (log2), reduzindo o pico de layout em ~15x.
+      let lo = min;
+      let hi = initial;
+      while (hi - lo > 0.5) {
+        const mid = (lo + hi) / 2;
+        el.style.fontSize = `${mid}px`;
+        if (el.scrollHeight > box.clientHeight) {
+          hi = mid;
+        } else {
+          lo = mid;
+        }
       }
+      el.style.fontSize = `${Math.floor(lo)}px`;
     };
 
     const schedule = () => {
