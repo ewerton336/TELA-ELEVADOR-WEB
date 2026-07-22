@@ -41,15 +41,17 @@ export function WeatherIcon({
   className = "",
 }: WeatherIconProps) {
   const svgUrl = getWeatherIconUrl(weatherCode, isDay);
-  const webpUrl = svgUrl ? svgUrl.replace(/\.svg$/, ".webp") : null;
+  // GIF, não WebP: o WebView da TV box não dá autoplay em WebP animado (fica
+  // estático). GIF anima em qualquer WebView. Gerados via render-gifs.mjs.
+  const iconUrl = svgUrl ? svgUrl.replace(/\.svg$/, ".gif") : null;
   const [failed, setFailed] = useState(false);
 
   // Novo código de clima → tenta o ícone de novo (limpa erro anterior).
   useEffect(() => {
     setFailed(false);
-  }, [webpUrl]);
+  }, [iconUrl]);
 
-  if (!webpUrl || failed) {
+  if (!iconUrl || failed) {
     return (
       <span
         className={`inline-flex items-center justify-center leading-none ${className}`}
@@ -64,11 +66,11 @@ export function WeatherIcon({
 
   return (
     <img
-      src={webpUrl}
+      src={iconUrl}
       width={sizePx}
       height={sizePx}
       alt={alt}
-      className={`weather-webp shrink-0 ${className}`}
+      className={`weather-icon-anim shrink-0 ${className}`}
       style={{ width: sizePx, height: sizePx }}
       decoding="async"
       // Fallback único para emoji — sem re-atribuir src (evita loop offline).
