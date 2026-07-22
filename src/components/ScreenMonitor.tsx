@@ -6,7 +6,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon, Copy, Check, Gauge } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon, Copy, Check, Gauge, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { requestAdminJson } from "@/services/apiClient";
@@ -268,6 +268,16 @@ function hasStaleHeartbeat(screen: ScreenInfo): boolean {
 
 export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const [screens, setScreens] = useState<ScreenInfo[]>([]);
+  // Telas "dispensadas" da lista (registros antigos/de teste). Some da lista
+  // enquanto desconectadas; reaparecem sozinhas se reconectarem. Persistido.
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("monitor:dismissedScreens");
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set<string>();
+    }
+  });
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   // deviceIds com comando de atualização em andamento → "Enviado" | "Agendado"
@@ -574,14 +584,67 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   }, [token]);
 
   // Agrupar por slug
-  const grouped = screens.reduce<Record<string, ScreenInfo[]>>((acc, s) => {
-    if (!acc[s.slug]) acc[s.slug] = [];
-    acc[s.slug].push(s);
-    return acc;
-  }, {});
+  const persistDismissed = (s: Set<string>) => {
+    try {
+      localStorage.setItem("monitor:dismissedScreens", JSON.stringify([...s]));
+    } catch {
+      /* ignore */
+    }
+  };
 
-  const onlineCount = screens.filter((s) => s.connected).length;
-  const offlineCount = screens.length - onlineCount;
+  const dismissScreen = (deviceId: string) =>
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.add(deviceId);
+      persistDismissed(next);
+      return next;
+    });
+
+  const dismissAllDisconnected = () =>
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      screens.forEach((s) => {
+        if (!s.connected) next.add(s.deviceId);
+      });
+      persistDismissed(next);
+      return next;
+    });
+
+  // Uma tela que reconecta sai da lista de "dispensadas" — reaparece e pode ser
+  // dispensada de novo depois se cair outra vez.
+  useEffect(() => {
+    setDismissedIds((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      screens.forEach((s) => {
+        if (s.connected && next.has(s.deviceId)) {
+          next.delete(s.deviceId);
+          changed = true;
+        }
+      });
+      if (changed) persistDismissed(next);
+      return changed ? next : prev;
+    });
+  }, [screens]);
+
+  // Esconde as dispensadas SÓ enquanto desconectadas (conectada sempre aparece).
+  const visibleScreens = screens.filter(
+    (s) => s.connected || !dismissedIds.has(s.deviceId),
+  );
+  const hiddenCount = screens.length - visibleScreens.length;
+  const disconnectedVisible = visibleScreens.filter((s) => !s.connected).length;
+
+  const grouped = visibleScreens.reduce<Record<string, ScreenInfo[]>>(
+    (acc, s) => {
+      if (!acc[s.slug]) acc[s.slug] = [];
+      acc[s.slug].push(s);
+      return acc;
+    },
+    {},
+  );
+
+  const onlineCount = visibleScreens.filter((s) => s.connected).length;
+  const offlineCount = visibleScreens.length - onlineCount;
 
   // "Mais recente" = maior build entre o do próprio master e o de todas as telas.
   // Evita falso "Desatualizada" quando a aba do master está num build antigo.
@@ -725,6 +788,11 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                   ({offlineCount} offline)
                 </span>
               )}
+              {hiddenCount > 0 && (
+                <span className="text-slate-300 ml-1">
+                  · {hiddenCount} oculta{hiddenCount !== 1 ? "s" : ""}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -752,6 +820,33 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
             >
               <RefreshCw className="w-4 h-4 mr-1.5" />
               Atualizar
+            </Button>
+          )}
+          {disconnectedVisible > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={dismissAllDisconnected}
+              title="Remove da lista todas as telas desconectadas (reaparecem se reconectarem)"
+              className="h-11 sm:h-9 text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Limpar desconectadas
+            </Button>
+          )}
+          {hiddenCount > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setDismissedIds(new Set());
+                persistDismissed(new Set());
+              }}
+              title="Mostrar novamente as telas ocultas"
+              className="h-11 sm:h-9 text-slate-500"
+            >
+              <Eye className="w-4 h-4 mr-1.5" />
+              Mostrar ocultas ({hiddenCount})
             </Button>
           )}
         </div>
@@ -998,6 +1093,18 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                                   ? "Detalhes"
                                   : "Agendar detalhes"}
                             </Button>
+                            {!online && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => dismissScreen(screen.deviceId)}
+                                title="Remover esta tela da lista (reaparece se reconectar)"
+                                className="text-xs h-11 sm:h-9 px-3 w-full sm:w-auto text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1.5" />
+                                Remover
+                              </Button>
+                            )}
                           </div>
                         </div>
                       );
