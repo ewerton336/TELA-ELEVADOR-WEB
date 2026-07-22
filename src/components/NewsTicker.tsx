@@ -12,7 +12,7 @@ const SEPARATOR = " • ";
 // Menor = mais lento. Antes era duração fixa de 60s (≈30px/s e variável com a
 // quantidade de notícia); agora é constante e mais lenta, para leitura
 // confortável independentemente de quantas notícias há.
-const TICKER_SPEED_PX_S = 18;
+const TICKER_SPEED_PX_S = 24;
 
 function NewsTickerInner({ items, visible }: NewsTickerProps) {
   const tickerText = useMemo(() => {

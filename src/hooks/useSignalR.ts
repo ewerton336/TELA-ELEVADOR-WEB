@@ -19,6 +19,7 @@ import {
   markOffline,
   getConnectivitySnapshot,
 } from "@/lib/connectivityTracker";
+import { getHistory } from "@/lib/offlineRecorder";
 
 /**
  * Coleta os detalhes da tela onde a aplicação está rodando (resolução, zoom,
@@ -143,6 +144,7 @@ function collectScreenDetails() {
     // mover; como o master não alcança um aparelho offline, a tela guarda o
     // histórico e reporta quando volta — permite correlacionar FPS × offline.
     connectivity: getConnectivitySnapshot(),
+    history: getHistory(),
     hardware: {
       deviceMemory:
         (navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
@@ -152,6 +154,21 @@ function collectScreenDetails() {
       perfMode: docEl?.classList.contains("perf-mode") ?? false,
     },
   };
+}
+
+async function reportScreenDetails() {
+  try {
+    await fetch(buildBackendUrl("/api/admin/monitor/details-data"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        deviceId: getScreenDeviceId(),
+        details: collectScreenDetails(),
+      }),
+    });
+  } catch {
+    void 0;
+  }
 }
 
 interface UseSignalROptions {
@@ -302,6 +319,7 @@ export function useSignalR({
           markOnline();
           stopFallbackPolling();
           await syncAfterReconnect();
+          void reportScreenDetails();
           retryTimerRef.current = null;
           logger.log("[SignalR] Reconexão manual bem-sucedida");
         } catch {
@@ -415,20 +433,8 @@ export function useSignalR({
       }
     });
 
-    connection.on("RequestScreenDetails", async () => {
-      try {
-        const details = collectScreenDetails();
-        await fetch(buildBackendUrl("/api/admin/monitor/details-data"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            deviceId: getScreenDeviceId(),
-            details,
-          }),
-        });
-      } catch {
-        void 0;
-      }
+    connection.on("RequestScreenDetails", () => {
+      void reportScreenDetails();
     });
 
     // --- Handlers de conexão ---
@@ -451,6 +457,7 @@ export function useSignalR({
       }
       await connection.invoke("JoinPredio", slug, __APP_VERSION__, deviceId);
       await syncAfterReconnect();
+      void reportScreenDetails();
     });
 
     connection.onclose(() => {

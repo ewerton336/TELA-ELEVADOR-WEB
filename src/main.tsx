@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { applyPerfMode } from "./lib/perfMode";
 import { startPerfProbe } from "./lib/perfProbe";
+import { startOfflineRecorder } from "./lib/offlineRecorder";
 import "./index.css";
 
 // Ativa o modo de desempenho ANTES do primeiro paint em hardware fraco
@@ -12,6 +13,7 @@ applyPerfMode();
 // Sonda de FPS/long-tasks: mede a saúde da renderização (invisível ao heap JS)
 // e reporta junto dos detalhes da tela, para diagnosticar a queda de fps 24/7.
 startPerfProbe();
+startOfflineRecorder();
 
 if ("serviceWorker" in navigator) {
   setInterval(

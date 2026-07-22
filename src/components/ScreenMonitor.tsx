@@ -1313,6 +1313,52 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                     )}
                   </div>
 
+                  {(() => {
+                    const hist = (entry.details as { history?: Array<{ fps: number | null; fpsMin: number | null; online: boolean }> }).history;
+                    if (!hist || hist.length === 0) return null;
+                    const mins = Math.round((hist.length * 30) / 60);
+                    return (
+                      <div className="rounded-lg border p-3">
+                        <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-2">
+                          <span>Histórico (~{mins} min) — FPS × tempo</span>
+                          {hist.some((s) => !s.online) && (
+                            <span className="text-slate-400 normal-case">
+                              <span className="inline-block w-2 h-2 rounded-sm bg-slate-300 align-middle mr-1" />
+                              offline
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-end gap-[2px] h-14">
+                          {hist.map((s, i) => {
+                            const v = s.fpsMin ?? s.fps;
+                            const h = v == null ? 4 : Math.max(4, Math.min(56, (v / 60) * 56));
+                            const color = !s.online
+                              ? "bg-slate-300"
+                              : v == null
+                                ? "bg-slate-200"
+                                : v >= 50
+                                  ? "bg-emerald-400"
+                                  : v >= 25
+                                    ? "bg-amber-400"
+                                    : "bg-red-400";
+                            return (
+                              <div
+                                key={i}
+                                className={`flex-1 rounded-sm ${color}`}
+                                style={{ height: h }}
+                                title={`${!s.online ? "OFFLINE · " : ""}fps ${v ?? "—"}`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                          <span>-{mins} min</span>
+                          <span>agora</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="rounded-md border divide-y divide-slate-100">
                     {rows.map((r) => (
                       <div
