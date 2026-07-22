@@ -1,24 +1,11 @@
 import { useEffect, useState } from "react";
 import { getWeatherIconUrl } from "@/lib/weatherIcons";
 
-// Cache em memória do markup SVG já buscado (chaveado por URL).
-const svgMarkupCache = new Map<string, string>();
-
-/**
- * Garante width/height explícitos no <svg> raiz. Os ícones do Meteocons vêm
- * apenas com viewBox; sem dimensões explícitas o html2canvas (usado no "print"
- * da tela) não consegue rasterizar o ícone — daí o clima sumir do print.
- */
-function withExplicitSize(markup: string, size: number): string {
-  if (/<svg[^>]*\swidth=/i.test(markup)) return markup;
-  return markup.replace(/<svg\b/i, `<svg width="${size}" height="${size}"`);
-}
-
 interface WeatherIconProps {
   /** Código WMO (Open-Meteo) da condição do tempo. */
   weatherCode: number;
   isDay?: boolean;
-  /** Emoji exibido enquanto carrega, se não houver ícone, ou se o SVG falhar. */
+  /** Emoji exibido enquanto carrega, se não houver ícone, ou se o WebP falhar. */
   fallbackEmoji?: string;
   /** Tamanho do ícone em pixels. */
   sizePx?: number;
@@ -28,10 +15,22 @@ interface WeatherIconProps {
 }
 
 /**
- * Renderiza o ícone de clima animado (SVG do Meteocons) correspondente ao
- * código WMO. O SVG é embutido **inline** no DOM (em vez de <img src>), o que
- * mantém a animação na tela E garante que o ícone apareça no print
- * (html2canvas). Se o código não tiver ícone, ou o SVG falhar, cai no emoji.
+ * Renderiza o ícone de clima **animado** (Meteocons) como WebP animado.
+ *
+ * Por que WebP e não o SVG inline: os SVGs do Meteocons animam via SMIL, que
+ * roda na MAIN THREAD forçando layout + recalc + paint ~60x/s por ícone — o que
+ * derruba o FPS nos media players fracos do elevador (medido: ~540 invalidações
+ * de layout/s só pelos ícones). O WebP animado roda no pipeline de imagem
+ * (decode/composição na GPU), fora da main thread, mantendo a animação a custo
+ * quase zero. Os WebPs são pré-renderizados a partir dos SVGs (script
+ * `render-icons.mjs`, loop perfeito via setCurrentTime) e servidos de
+ * `public/weather/<nome>.webp`.
+ *
+ * Um `<img>` também é capturado pelo html2canvas (print da tela) — como um
+ * quadro estático, o que é suficiente.
+ *
+ * Se o WebP não carregar (código sem ícone, arquivo ausente, ou offline sem
+ * cache), cai no emoji. O onError troca o estado UMA vez (sem risco de loop).
  */
 export function WeatherIcon({
   weatherCode,
@@ -41,42 +40,16 @@ export function WeatherIcon({
   alt = "Condição do tempo",
   className = "",
 }: WeatherIconProps) {
-  const url = getWeatherIconUrl(weatherCode, isDay);
-  const [markup, setMarkup] = useState<string | null>(() =>
-    url ? svgMarkupCache.get(url) ?? null : null,
-  );
+  const svgUrl = getWeatherIconUrl(weatherCode, isDay);
+  const webpUrl = svgUrl ? svgUrl.replace(/\.svg$/, ".webp") : null;
   const [failed, setFailed] = useState(false);
 
+  // Novo código de clima → tenta o ícone de novo (limpa erro anterior).
   useEffect(() => {
-    if (!url) return;
-    const cached = svgMarkupCache.get(url);
-    if (cached) {
-      setMarkup(cached);
-      setFailed(false);
-      return;
-    }
-    let active = true;
-    Promise.resolve()
-      .then(() => fetch(url))
-      .then((r) => (r.ok ? r.text() : Promise.reject(new Error("not found"))))
-      .then((txt) => {
-        const sized = withExplicitSize(txt, sizePx);
-        svgMarkupCache.set(url, sized);
-        if (active) {
-          setMarkup(sized);
-          setFailed(false);
-        }
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, [url, sizePx]);
+    setFailed(false);
+  }, [webpUrl]);
 
-  // Sem ícone mapeado, falha de carregamento, ou ainda carregando → emoji.
-  if (!url || failed || !markup) {
+  if (!webpUrl || failed) {
     return (
       <span
         className={`inline-flex items-center justify-center leading-none ${className}`}
@@ -89,14 +62,17 @@ export function WeatherIcon({
     );
   }
 
-  // SVG inline: anima na tela e é capturado fielmente no print.
   return (
-    <span
-      className={`weather-svg inline-flex items-center justify-center shrink-0 ${className}`}
-      style={{ width: sizePx, height: sizePx, lineHeight: 0 }}
-      role="img"
-      aria-label={alt}
-      dangerouslySetInnerHTML={{ __html: markup }}
+    <img
+      src={webpUrl}
+      width={sizePx}
+      height={sizePx}
+      alt={alt}
+      className={`weather-webp shrink-0 ${className}`}
+      style={{ width: sizePx, height: sizePx }}
+      decoding="async"
+      // Fallback único para emoji — sem re-atribuir src (evita loop offline).
+      onError={() => setFailed(true)}
     />
   );
 }

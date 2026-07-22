@@ -394,6 +394,13 @@ html.perf-mode .weather-row {
   transition: none;
 }
 
+/* Ícone de clima: WebP animado (ver WeatherIcon.tsx). Anima no pipeline de
+   imagem (GPU), fora da main thread — não invalida layout/paint da tela. */
+.weather-webp {
+  display: block;
+  object-fit: contain;
+}
+
 .weather-icon {
   @apply drop-shadow;
 }
