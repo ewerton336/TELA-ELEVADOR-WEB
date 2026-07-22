@@ -402,6 +402,24 @@ export function useSignalR({
       if (screenshotBusyRef.current) return;
       screenshotBusyRef.current = true;
       try {
+        // Captura NATIVA exata (PixelCopy no app Android), quando disponível —
+        // pega os pixels reais (imagens cross-origin, GIF, gradiente). O
+        // html2canvas re-renderiza o DOM e diverge da tela.
+        const native = (
+          window as unknown as {
+            AndroidNative?: {
+              captureAndUpload?: (deviceId: string, uploadUrl: string) => void;
+            };
+          }
+        ).AndroidNative;
+        if (native && typeof native.captureAndUpload === "function") {
+          native.captureAndUpload(
+            getScreenDeviceId(),
+            buildBackendUrl("/api/admin/monitor/screenshot-data"),
+          );
+          return;
+        }
+
         const html2canvas = (await import("html2canvas")).default;
         const el =
           (document.querySelector(".elevator-screen") as HTMLElement) ??
