@@ -6,7 +6,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon, Copy, Check } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon, Copy, Check, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { requestAdminJson } from "@/services/apiClient";
@@ -1068,6 +1068,22 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                 setDetailsCopied(true);
                 setTimeout(() => setDetailsCopied(false), 2000);
               };
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const perf = (entry.details as any)?.performance ?? {};
+              const fpsNow: number | null =
+                typeof perf.fps === "number" ? perf.fps : null;
+              const fpsWorst: number | null =
+                typeof perf.fpsMin === "number" ? perf.fpsMin : null;
+              // Faixa de cor: verde fluido, amarelo travando, vermelho crítico.
+              const fpsTone = (v: number | null) =>
+                v == null
+                  ? { bg: "bg-slate-100", text: "text-slate-400", label: "—" }
+                  : v >= 50
+                    ? { bg: "bg-emerald-50", text: "text-emerald-600", label: "fluido" }
+                    : v >= 25
+                      ? { bg: "bg-amber-50", text: "text-amber-600", label: "travando" }
+                      : { bg: "bg-red-50", text: "text-red-600", label: "crítico" };
+              const tone = fpsTone(fpsNow);
               return (
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -1115,6 +1131,42 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                       </Button>
                     </div>
                   </div>
+
+                  {/* FPS em destaque — saúde da renderização do elevador em prod */}
+                  <div
+                    className={`flex items-center justify-between gap-3 rounded-lg px-4 py-3 ${tone.bg}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Gauge className={`w-5 h-5 ${tone.text}`} />
+                      <div>
+                        <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                          FPS agora
+                        </div>
+                        {fpsWorst != null && (
+                          <div className="text-[11px] text-slate-400">
+                            pior nos últimos 60s: {fpsWorst}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {fpsNow != null ? (
+                      <div className="flex items-baseline gap-1.5">
+                        <span
+                          className={`font-mono text-3xl font-bold leading-none ${tone.text}`}
+                        >
+                          {fpsNow}
+                        </span>
+                        <span className={`text-xs font-medium ${tone.text}`}>
+                          fps · {tone.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 text-right max-w-[55%]">
+                        Sem dado — a tela precisa recarregar com a versão nova
+                      </span>
+                    )}
+                  </div>
+
                   <div className="rounded-md border divide-y divide-slate-100">
                     {rows.map((r) => (
                       <div
