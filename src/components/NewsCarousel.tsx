@@ -76,18 +76,13 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
     setCurrent(0);
   }, [slides.length]);
 
-  // Timer management - skip for video slides (they advance on ended)
+  // Timer management - skip for video slides (they advance on ended).
+  // A rotação continua girando mesmo offline (mostrando as notícias em cache);
+  // o flash preto na transição é resolvido pelo gradiente de fundo do slide.
   useEffect(() => {
     if (slides.length === 0) return;
-    if (isVideoSlide) {
-      // For video slides, set a max timeout (60s) as safety net
-      timerRef.current = setTimeout(advanceSlide, 60000);
-      return () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-      };
-    }
-
-    timerRef.current = setTimeout(advanceSlide, slideDurationMs);
+    const duration = isVideoSlide ? 60000 : slideDurationMs;
+    timerRef.current = setTimeout(advanceSlide, duration);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
@@ -196,21 +191,17 @@ function ExternalNewsSlide({ item }: { item: NewsItem }) {
     setImgError(false);
   }, [item.thumbnail]);
 
-  const showFallback = !item.thumbnail || imgError;
-
   return (
     <div className="relative h-full">
-      {showFallback ? (
-        // Fallback LOCAL (sem rede). Antes usávamos um placeholder remoto
-        // (placehold.co) no onError; quando o elevador está offline — o que é
-        // frequente — esse placeholder também falhava e o onError se reatribuía
-        // em loop infinito (~dezenas de req/s), travando a main thread e
-        // derrubando o FPS de TODAS as animações. Um fallback local não faz
-        // requisição e não pode entrar em loop.
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800">
-          <Newspaper className="w-24 h-24 text-white/10" />
-        </div>
-      ) : (
+      {/* Fundo SEMPRE presente (gradiente local, sem rede). Fica por baixo da
+          imagem — enquanto a imagem carrega OU quando falha (offline), aparece
+          o gradiente em vez de preto, eliminando o flash preto na transição.
+          Também evita o antigo loop de placeholder remoto (placehold.co), que
+          offline reatribuía o onError infinitamente e travava a tela. */}
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800">
+        <Newspaper className="w-24 h-24 text-white/10" />
+      </div>
+      {item.thumbnail && !imgError && (
         <img
           src={item.thumbnail}
           alt={item.title}

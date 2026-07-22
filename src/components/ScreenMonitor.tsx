@@ -646,11 +646,14 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   const onlineCount = visibleScreens.filter((s) => s.connected).length;
   const offlineCount = visibleScreens.length - onlineCount;
 
-  // "Mais recente" = maior build entre o do próprio master e o de todas as telas.
-  // Evita falso "Desatualizada" quando a aba do master está num build antigo.
+  // "Mais recente" = maior build entre o do próprio master e o das telas
+  // CONECTADAS. Evita falso "Desatualizada" quando a aba do master está num
+  // build antigo — mas ignora telas desconectadas (registros velhos ou de
+  // teste/preview), que podem ter uma versão "futura" e envenenar a
+  // comparação, fazendo as telas reais parecerem desatualizadas sem motivo.
   const latestVersion = computeLatestVersion([
     __APP_VERSION__,
-    ...screens.map((s) => s.appVersion),
+    ...screens.filter((s) => s.connected).map((s) => s.appVersion),
   ]);
 
   // Marca otimisticamente uma ação como agendada (badge aparece na hora; o
