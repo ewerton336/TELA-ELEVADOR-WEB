@@ -185,6 +185,42 @@ function formatScreenDetailRows(
           : "—",
     },
     {
+      label: "Conexão",
+      value: d.connectivity
+        ? d.connectivity.online
+          ? "Online"
+          : "Offline"
+        : "—",
+    },
+    {
+      label: "Quedas de conexão",
+      value:
+        typeof d.connectivity?.offlineCount === "number"
+          ? String(d.connectivity.offlineCount)
+          : "—",
+    },
+    {
+      label: "Tempo total offline",
+      value:
+        typeof d.connectivity?.totalOfflineMs === "number"
+          ? formatUptime(Math.round(d.connectivity.totalOfflineMs / 1000))
+          : "—",
+    },
+    {
+      label: "Maior período offline",
+      value:
+        typeof d.connectivity?.longestOfflineMs === "number" &&
+        d.connectivity.longestOfflineMs > 0
+          ? formatUptime(Math.round(d.connectivity.longestOfflineMs / 1000))
+          : "—",
+    },
+    {
+      label: "Última queda",
+      value: d.connectivity?.lastOfflineAt
+        ? new Date(d.connectivity.lastOfflineAt).toLocaleString("pt-BR")
+        : "—",
+    },
+    {
       label: "Memória do dispositivo",
       value:
         d.hardware?.deviceMemory != null

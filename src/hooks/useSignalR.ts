@@ -14,6 +14,11 @@ import { getScreenDeviceId } from "@/lib/screenDeviceId";
 import { setCache, clearAllCache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { getPerfSnapshot } from "@/lib/perfProbe";
+import {
+  markOnline,
+  markOffline,
+  getConnectivitySnapshot,
+} from "@/lib/connectivityTracker";
 
 /**
  * Coleta os detalhes da tela onde a aplicação está rodando (resolução, zoom,
@@ -134,6 +139,10 @@ function collectScreenDetails() {
         domNodes: document.getElementsByTagName("*").length,
       };
     })(),
+    // Histórico de quedas de conexão desde o load. O elevador perde WiFi ao se
+    // mover; como o master não alcança um aparelho offline, a tela guarda o
+    // histórico e reporta quando volta — permite correlacionar FPS × offline.
+    connectivity: getConnectivitySnapshot(),
     hardware: {
       deviceMemory:
         (navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
@@ -290,6 +299,7 @@ export function useSignalR({
           await connection.start();
           await connection.invoke("JoinPredio", slug, __APP_VERSION__, deviceId);
           setIsConnected(true);
+          markOnline();
           stopFallbackPolling();
           await syncAfterReconnect();
           retryTimerRef.current = null;
@@ -425,12 +435,14 @@ export function useSignalR({
     connection.onreconnecting(() => {
       logger.log("[SignalR] Reconectando...");
       setIsConnected(false);
+      markOffline();
       startFallbackPolling();
     });
 
     connection.onreconnected(async () => {
       logger.log("[SignalR] Reconectado, re-entrando no grupo");
       setIsConnected(true);
+      markOnline();
       stopFallbackPolling();
       // Cancela retry manual para evitar JoinPredio duplicado
       if (retryTimerRef.current) {
@@ -444,6 +456,7 @@ export function useSignalR({
     connection.onclose(() => {
       logger.log("[SignalR] Conexão fechada");
       setIsConnected(false);
+      markOffline();
       startFallbackPolling();
       // Inicia loop de reconexão infinita (WiFi do elevador)
       startManualRetry(connection, deviceId);
@@ -456,11 +469,13 @@ export function useSignalR({
         await connection.invoke("JoinPredio", slug, __APP_VERSION__, deviceId);
         connectionRef.current = connection;
         setIsConnected(true);
+        markOnline();
         startTimeRef.current = Date.now();
         logger.log("[SignalR] Conectado ao grupo:", slug);
       } catch (err) {
         logger.error("[SignalR] Erro ao conectar:", err);
         setIsConnected(false);
+        markOffline();
         startFallbackPolling();
         startManualRetry(connection, deviceId);
       }
