@@ -6,7 +6,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Eye, EyeOff, RefreshCw, RotateCw, Camera, X, Download, Ruler, Clock, Image as ImageIcon, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { requestAdminJson } from "@/services/apiClient";
@@ -148,6 +148,43 @@ function formatScreenDetailRows(
           : "—",
     },
     {
+      label: "FPS (agora / pior 60s)",
+      value: (() => {
+        const fps = d.performance?.fps;
+        const min = d.performance?.fpsMin;
+        if (typeof fps !== "number" && typeof min !== "number") return "—";
+        const a = typeof fps === "number" ? String(fps) : "—";
+        const b = typeof min === "number" ? String(min) : "—";
+        return `${a} / ${b}`;
+      })(),
+    },
+    {
+      label: "Pior quadro (60s)",
+      value:
+        typeof d.performance?.worstFrameMs === "number"
+          ? `${d.performance.worstFrameMs} ms`
+          : "—",
+    },
+    {
+      label: "Long tasks (60s)",
+      value:
+        typeof d.performance?.longTasks === "number"
+          ? `${d.performance.longTasks}${
+              typeof d.performance?.longTaskMaxMs === "number" &&
+              d.performance.longTaskMaxMs > 0
+                ? ` (máx ${d.performance.longTaskMaxMs} ms)`
+                : ""
+            }`
+          : "—",
+    },
+    {
+      label: "Nós no DOM",
+      value:
+        typeof d.performance?.domNodes === "number"
+          ? String(d.performance.domNodes)
+          : "—",
+    },
+    {
       label: "Memória do dispositivo",
       value:
         d.hardware?.deviceMemory != null
@@ -206,6 +243,7 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
   // deviceId → últimos detalhes (resolução/zoom/etc.) obtidos
   const [screenDetails, setScreenDetails] = useState<Map<string, { capturedAt: string; details: ScreenDetails }>>(new Map());
   const [openDetailsId, setOpenDetailsId] = useState<string | null>(null);
+  const [detailsCopied, setDetailsCopied] = useState(false);
   // deviceId → data/hora do último print e dos últimos detalhes obtidos
   const [captureTimes, setCaptureTimes] = useState<Map<string, CaptureTimes>>(new Map());
   const connectionRef = useRef<HubConnection | null>(null);
@@ -1002,6 +1040,34 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
               const rows = formatScreenDetailRows(entry.details);
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const ua = (entry.details as any)?.userAgent as string | undefined;
+              const copyText = [
+                `Detalhes da tela ${openDetailsId}`,
+                `Obtido em ${new Date(entry.capturedAt).toLocaleString("pt-BR")}`,
+                "",
+                ...rows.map((r) => `${r.label}: ${r.value}`),
+                ...(ua ? ["", `User-Agent: ${ua}`] : []),
+              ].join("\n");
+              const handleCopy = async () => {
+                try {
+                  await navigator.clipboard.writeText(copyText);
+                } catch {
+                  // Fallback para contextos sem clipboard API (http/permite).
+                  const ta = document.createElement("textarea");
+                  ta.value = copyText;
+                  ta.style.position = "fixed";
+                  ta.style.opacity = "0";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                  } catch {
+                    // ignora
+                  }
+                  document.body.removeChild(ta);
+                }
+                setDetailsCopied(true);
+                setTimeout(() => setDetailsCopied(false), 2000);
+              };
               return (
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -1019,15 +1085,35 @@ export function ScreenMonitor({ token }: ScreenMonitorProps) {
                         {new Date(entry.capturedAt).toLocaleString("pt-BR")}
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setOpenDetailsId(null)}
-                      className="h-9 px-3 text-xs"
-                    >
-                      <X className="w-4 h-4 mr-1.5" />
-                      Fechar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopy}
+                        className="h-9 px-3 text-xs"
+                      >
+                        {detailsCopied ? (
+                          <>
+                            <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 mr-1.5" />
+                            Copiar
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setOpenDetailsId(null)}
+                        className="h-9 px-3 text-xs"
+                      >
+                        <X className="w-4 h-4 mr-1.5" />
+                        Fechar
+                      </Button>
+                    </div>
                   </div>
                   <div className="rounded-md border divide-y divide-slate-100">
                     {rows.map((r) => (

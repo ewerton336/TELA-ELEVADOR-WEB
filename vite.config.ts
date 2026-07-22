@@ -3,13 +3,18 @@ import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
+// Alvo do backend para o dev/preview server. Padrão: backend local (3003).
+// Defina VITE_PROXY_TARGET para apontar a um backend remoto (ex.: produção)
+// sem esbarrar em CORS — o proxy do Vite reescreve a origem.
+const proxyTarget = process.env.VITE_PROXY_TARGET || "http://localhost:3003";
+
 const proxy = {
   "/api": {
-    target: "http://localhost:3003",
+    target: proxyTarget,
     changeOrigin: true,
   },
   "/hub": {
-    target: "http://localhost:3003",
+    target: proxyTarget,
     changeOrigin: true,
     ws: true,
   },

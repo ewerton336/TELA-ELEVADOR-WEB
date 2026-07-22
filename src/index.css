@@ -534,6 +534,9 @@ html.perf-mode .msg-card--urgent {
   transform-origin: left center;
   animation: carousel-progress var(--carousel-progress-duration, 10000ms) linear
     forwards;
+  /* Camada própria de GPU — evita repaint da camada rotacionada a cada frame. */
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .news-slide {
@@ -573,6 +576,9 @@ html.perf-mode .internal-news-overlay {
   transform-origin: left center;
   animation: message-progress var(--message-progress-duration, 15000ms) linear
     forwards;
+  /* Camada própria de GPU — evita repaint da camada rotacionada a cada frame. */
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* =========================================================
@@ -607,6 +613,11 @@ html.perf-mode .internal-news-overlay {
   display: flex;
   white-space: nowrap;
   animation: ticker-scroll 60s linear infinite;
+  /* Promove o ticker a uma camada de compositor própria (GPU). Sem isto, num
+     ARM fraco, cada frame do scroll repinta a camada rotacionada inteira do
+     .elevator-rotate na CPU — degradando o FPS de todas as animações. */
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .news-ticker-content {

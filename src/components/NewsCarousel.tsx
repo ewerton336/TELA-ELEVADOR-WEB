@@ -189,19 +189,37 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
 
 function ExternalNewsSlide({ item }: { item: NewsItem }) {
   const fitRef = useFitText(`${item.title}|${item.description ?? ""}`);
+  const [imgError, setImgError] = useState(false);
+
+  // Reseta o estado de erro quando a imagem muda (evita fallback grudado).
+  useEffect(() => {
+    setImgError(false);
+  }, [item.thumbnail]);
+
+  const showFallback = !item.thumbnail || imgError;
+
   return (
     <div className="relative h-full">
-      <img
-        src={item.thumbnail}
-        alt={item.title}
-        className="absolute inset-0 w-full h-full object-cover"
-        loading="lazy"
-        decoding="async"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src =
-            "https://placehold.co/1200x800/1e293b/94a3b8?text=G1";
-        }}
-      />
+      {showFallback ? (
+        // Fallback LOCAL (sem rede). Antes usávamos um placeholder remoto
+        // (placehold.co) no onError; quando o elevador está offline — o que é
+        // frequente — esse placeholder também falhava e o onError se reatribuía
+        // em loop infinito (~dezenas de req/s), travando a main thread e
+        // derrubando o FPS de TODAS as animações. Um fallback local não faz
+        // requisição e não pode entrar em loop.
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800">
+          <Newspaper className="w-24 h-24 text-white/10" />
+        </div>
+      ) : (
+        <img
+          src={item.thumbnail}
+          alt={item.title}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgError(true)}
+        />
+      )}
       <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
       <div className="relative h-full px-7 py-6 flex flex-col">
         <div className="flex items-center justify-between gap-3 text-sm text-white/80 flex-shrink-0">

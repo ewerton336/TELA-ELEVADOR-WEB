@@ -13,6 +13,7 @@ import { getPredioHubUrl, buildBackendUrl } from "@/lib/backendUrl";
 import { getScreenDeviceId } from "@/lib/screenDeviceId";
 import { setCache, clearAllCache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
+import { getPerfSnapshot } from "@/lib/perfProbe";
 
 /**
  * Coleta os detalhes da tela onde a aplicação está rodando (resolução, zoom,
@@ -112,12 +113,25 @@ function collectScreenDetails() {
         };
       };
       const mem = perf.memory;
+      // FPS/long-tasks — o gargalo real da lentidão 24/7 vive no compositor,
+      // que o heap JS não mede. Ver src/lib/perfProbe.ts.
+      const fps = getPerfSnapshot();
       return {
         usedJSHeapSize: mem?.usedJSHeapSize ?? null,
         totalJSHeapSize: mem?.totalJSHeapSize ?? null,
         jsHeapSizeLimit: mem?.jsHeapSizeLimit ?? null,
         // segundos desde que a página carregou (uptime da aba/tela)
         uptimeSeconds: Math.round(performance.now() / 1000),
+        // Renderização (perfProbe): FPS atual/pior, pior quadro e long tasks
+        // na janela dos últimos 60s. Correlacionar com uptimeSeconds mostra se
+        // e quando a tela degrada.
+        fps: fps.fps,
+        fpsMin: fps.fpsMin,
+        worstFrameMs: fps.worstFrameMs,
+        longTasks: fps.longTasks,
+        longTaskMaxMs: fps.longTaskMaxMs,
+        // Total de nós no DOM — detecta acúmulo de elementos ao longo do tempo.
+        domNodes: document.getElementsByTagName("*").length,
       };
     })(),
     hardware: {

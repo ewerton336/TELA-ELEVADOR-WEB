@@ -157,21 +157,31 @@ export function UnifiedCarousel({
 
 // Slide de Notícia
 function NewsSlide({ item }: { item: NewsItem }) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [item.thumbnail]);
+
+  const showFallback = !item.thumbnail || imgError;
+
   return (
     <Card className="glass-card border-white/10 h-full overflow-hidden">
       <div className="h-full relative">
-        {/* Imagem de fundo */}
-        <img
-          src={item.thumbnail}
-          alt={item.title}
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy"
-          decoding="async"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              "https://placehold.co/800x450/c4170c/ffffff?text=G1+Santos";
-          }}
-        />
+        {/* Imagem de fundo — fallback LOCAL (sem rede). Um placeholder remoto no
+            onError entraria em loop infinito quando a tela está offline. */}
+        {showFallback ? (
+          <div className="absolute inset-0 bg-gradient-to-br from-red-900 via-slate-900 to-slate-800" />
+        ) : (
+          <img
+            src={item.thumbnail}
+            alt={item.title}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgError(true)}
+          />
+        )}
 
         {/* Overlay gradiente */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
