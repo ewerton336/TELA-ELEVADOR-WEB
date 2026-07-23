@@ -85,6 +85,15 @@ export function NoticiaInternaCard({ slug, token }: NoticiaInternaCardProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+
+    // Barra o arquivo grande já no cliente, evitando um upload longo no 4G
+    // que só falharia no servidor (limite de 25 MB).
+    if (file && file.size > 25 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. O limite é 25 MB.");
+      e.target.value = "";
+      return;
+    }
+
     setArquivo(file);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(file ? URL.createObjectURL(file) : null);
@@ -140,7 +149,11 @@ export function NoticiaInternaCard({ slug, token }: NoticiaInternaCardProps) {
       await loadNoticiasInternas();
     } catch (err) {
       console.error("Erro ao salvar noticia interna:", err);
-      toast.error("Erro ao salvar notícia do condomínio");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Erro ao salvar notícia do condomínio",
+      );
     } finally {
       setSaving(false);
     }
@@ -171,7 +184,7 @@ export function NoticiaInternaCard({ slug, token }: NoticiaInternaCardProps) {
         <Button
           onClick={handleStartAdd}
           size="sm"
-          className="h-7 text-xs flex-shrink-0"
+          className="h-9 sm:h-7 px-3 text-xs flex-shrink-0"
         >
           <Plus className="w-3 h-3 mr-1" />
           Nova
@@ -317,9 +330,9 @@ function NoticiaInternaForm({
             <Input
               id="ni-arquivo"
               type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+              accept="image/*,video/mp4,video/webm"
               onChange={onFileChange}
-              className="bg-white/10 border-white/20 text-white h-8 text-sm file:bg-white/10 file:text-white file:border-0 file:mr-2 file:px-2 file:rounded"
+              className="bg-white/10 border-white/20 text-white h-11 sm:h-9 text-sm file:bg-white/10 file:text-white file:border-0 file:mr-2 file:px-2 file:py-1.5 file:rounded"
             />
             <p className="text-white/30 text-[10px]">
               Máx 25 MB. Formatos: JPEG, PNG, GIF, WebP, MP4, WebM
@@ -376,7 +389,7 @@ function NoticiaInternaForm({
             <Button
               onClick={onSave}
               disabled={saving}
-              className="flex-1 h-8 text-sm"
+              className="flex-1 h-11 sm:h-9 text-sm"
             >
               <Save className="w-3 h-3 mr-1" />
               {saving ? "Salvando..." : "Salvar"}
@@ -384,7 +397,7 @@ function NoticiaInternaForm({
             <Button
               variant="outline"
               onClick={onCancel}
-              className="bg-transparent border-white/20 text-white hover:bg-white/10 h-8 text-sm"
+              className="bg-transparent border-white/20 text-white hover:bg-white/10 h-11 sm:h-9 px-4 text-sm"
             >
               <X className="w-3 h-3 mr-1" /> Cancelar
             </Button>

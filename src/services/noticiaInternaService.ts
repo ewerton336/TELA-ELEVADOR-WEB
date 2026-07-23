@@ -1,4 +1,26 @@
 import { requestJson } from "@/services/apiClient";
+import { buildBackendUrl } from "@/lib/backendUrl";
+
+/** Extrai a mensagem de erro do backend ({ message }) para exibir ao usuário. */
+async function throwWithServerMessage(
+  res: Response,
+  fallback: string,
+  label: string,
+): Promise<never> {
+  const text = await res.text();
+  let parsed: unknown = text;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    /* keep text */
+  }
+  const serverMessage =
+    parsed && typeof parsed === "object" && "message" in parsed
+      ? String((parsed as { message?: string }).message ?? "")
+      : "";
+  console.error(`[noticiaInternaService] ${label} failed:`, parsed);
+  throw new Error(serverMessage || fallback);
+}
 
 export interface NoticiaInterna {
   id: number;
@@ -57,7 +79,9 @@ export async function createNoticiaInterna(
   if (data.fimEm) formData.append("fimEm", data.fimEm);
   formData.append("arquivo", data.arquivo);
 
-  const url = `/api/${encodeURIComponent(slug)}/admin/noticia-interna`;
+  const url = buildBackendUrl(
+    `/api/${encodeURIComponent(slug)}/admin/noticia-interna`,
+  );
   const res = await fetch(url, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -65,12 +89,11 @@ export async function createNoticiaInterna(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    let parsed: unknown = text;
-    try { parsed = JSON.parse(text); } catch { /* keep text */ }
-    const error = new Error(`HTTP ${res.status}`);
-    console.error("[noticiaInternaService] create failed:", parsed);
-    throw error;
+    await throwWithServerMessage(
+      res,
+      "Erro ao salvar notícia do condomínio",
+      "create",
+    );
   }
 
   return (await res.json()) as NoticiaInterna;
@@ -97,7 +120,9 @@ export async function updateNoticiaInterna(
   formData.append("ativo", String(data.ativo));
   if (data.arquivo) formData.append("arquivo", data.arquivo);
 
-  const url = `/api/${encodeURIComponent(slug)}/admin/noticia-interna/${id}`;
+  const url = buildBackendUrl(
+    `/api/${encodeURIComponent(slug)}/admin/noticia-interna/${id}`,
+  );
   const res = await fetch(url, {
     method: "PUT",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -105,12 +130,11 @@ export async function updateNoticiaInterna(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    let parsed: unknown = text;
-    try { parsed = JSON.parse(text); } catch { /* keep text */ }
-    const error = new Error(`HTTP ${res.status}`);
-    console.error("[noticiaInternaService] update failed:", parsed);
-    throw error;
+    await throwWithServerMessage(
+      res,
+      "Erro ao salvar notícia do condomínio",
+      "update",
+    );
   }
 
   return (await res.json()) as NoticiaInterna;
@@ -121,7 +145,9 @@ export async function deleteNoticiaInterna(
   token: string | null,
   id: number,
 ): Promise<void> {
-  const url = `/api/${encodeURIComponent(slug)}/admin/noticia-interna/${id}`;
+  const url = buildBackendUrl(
+    `/api/${encodeURIComponent(slug)}/admin/noticia-interna/${id}`,
+  );
   const res = await fetch(url, {
     method: "DELETE",
     headers: token ? { Authorization: `Bearer ${token}` } : {},

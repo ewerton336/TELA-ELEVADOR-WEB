@@ -138,7 +138,7 @@ export function TickerSection({ slug, token }: TickerSectionProps) {
           <Button
             onClick={handleStartAdd}
             size="sm"
-            className="h-7 text-xs flex-shrink-0"
+            className="h-9 sm:h-7 px-3 text-xs flex-shrink-0"
           >
             <Plus className="w-3 h-3 mr-1" />
             Novo
@@ -270,14 +270,14 @@ export function TickerSection({ slug, token }: TickerSectionProps) {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button onClick={handleSave} className="flex-1 h-8 text-sm">
+                <Button onClick={handleSave} className="flex-1 h-11 sm:h-9 text-sm">
                   <Save className="w-3 h-3 mr-1" />
                   Salvar
                 </Button>
                 <Button
                   variant="outline"
                   onClick={resetForm}
-                  className="bg-transparent border-white/20 text-white hover:bg-white/10 h-8 text-sm"
+                  className="bg-transparent border-white/20 text-white hover:bg-white/10 h-11 sm:h-9 px-4 text-sm"
                 >
                   <X className="w-3 h-3 mr-1" />
                   Cancelar
