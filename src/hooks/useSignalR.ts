@@ -413,10 +413,11 @@ export function useSignalR({
           }
         ).AndroidNative;
         if (native && typeof native.captureAndUpload === "function") {
-          native.captureAndUpload(
-            getScreenDeviceId(),
+          const uploadUrl = new URL(
             buildBackendUrl("/api/admin/monitor/screenshot-data"),
-          );
+            window.location.href,
+          ).toString();
+          native.captureAndUpload(getScreenDeviceId(), uploadUrl);
           return;
         }
 
