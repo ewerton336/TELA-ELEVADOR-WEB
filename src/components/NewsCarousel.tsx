@@ -8,6 +8,15 @@ type CarouselSlide =
   | { type: "external"; data: NewsItem }
   | { type: "internal"; data: NoticiaInterna };
 
+/** Tempo padrão de exibição de cada slide do carrossel. */
+export const SLIDE_DURATION_MS = 10000;
+
+/**
+ * Quanto esperar num slide de vídeo enquanto os metadados (duração) não chegam.
+ * Só entra em cena se o vídeo nunca carregar; o caminho normal usa a duração real.
+ */
+const VIDEO_METADATA_FALLBACK_MS = 60000;
+
 interface NewsCarouselProps {
   data: NewsData | null;
   isLoading?: boolean;
@@ -49,9 +58,11 @@ function asArray<T>(value: unknown): T[] {
 
 export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: NewsCarouselProps) {
   const [current, setCurrent] = useState(0);
-  const slideDurationMs = 10000;
+  const slideDurationMs = SLIDE_DURATION_MS;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoEndedRef = useRef(false);
+  // Duração do vídeo do slide atual (null enquanto os metadados não chegam).
+  const [videoDurationMs, setVideoDurationMs] = useState<number | null>(null);
 
   const externalItems = useMemo(() => asArray<NewsItem>(data?.items), [data?.items]);
   const internalItems = useMemo(() => asArray<NoticiaInterna>(noticiasInternas), [noticiasInternas]);
@@ -71,22 +82,50 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
     currentSlide?.type === "internal" &&
     currentSlide.data.tipoMidia === "video";
 
+  // Vídeo mais curto que o tempo padrão do slide: repete em loop até fechar
+  // esse tempo, em vez de piscar por 2s e já trocar de slide.
+  const isShortVideo =
+    isVideoSlide && videoDurationMs !== null && videoDurationMs < slideDurationMs;
+
   useEffect(() => {
     if (slides.length === 0) return;
     setCurrent(0);
   }, [slides.length]);
 
-  // Timer management - skip for video slides (they advance on ended).
+  // A duração medida vale só para o slide atual.
+  useEffect(() => {
+    setVideoDurationMs(null);
+  }, [current]);
+
+  // Timer management — vídeo longo avança no onEnded; vídeo curto fica em loop
+  // e o timer o mantém no ar pelo tempo padrão do slide.
   // A rotação continua girando mesmo offline (mostrando as notícias em cache);
   // o flash preto na transição é resolvido pelo gradiente de fundo do slide.
   useEffect(() => {
     if (slides.length === 0) return;
-    const duration = isVideoSlide ? 60000 : slideDurationMs;
+    let duration: number;
+    if (!isVideoSlide) {
+      duration = slideDurationMs;
+    } else if (videoDurationMs === null) {
+      duration = VIDEO_METADATA_FALLBACK_MS;
+    } else if (videoDurationMs < slideDurationMs) {
+      duration = slideDurationMs;
+    } else {
+      // Margem sobre a duração real: rede do elevador pode engasgar o onEnded.
+      duration = videoDurationMs + 1000;
+    }
     timerRef.current = setTimeout(advanceSlide, duration);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [current, slides.length, isVideoSlide, advanceSlide, slideDurationMs]);
+  }, [
+    current,
+    slides.length,
+    isVideoSlide,
+    videoDurationMs,
+    advanceSlide,
+    slideDurationMs,
+  ]);
 
   const handleVideoEnded = useCallback(() => {
     videoEndedRef.current = true;
@@ -150,6 +189,10 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
                   item={slide.data}
                   isActive={isActive}
                   onVideoEnded={handleVideoEnded}
+                  minDurationMs={slideDurationMs}
+                  onVideoDurationChange={
+                    isActive ? setVideoDurationMs : undefined
+                  }
                 />
               </div>
             );
@@ -169,10 +212,10 @@ export function NewsCarousel({ data, isLoading, error, noticiasInternas = [] }: 
       </div>
 
       {/* Progress bar — CSS animation pura, zero re-renders */}
-      {!isVideoSlide && (
+      {(!isVideoSlide || isShortVideo) && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
           <div
-            key={current}
+            key={`${current}-${isShortVideo}`}
             className="carousel-progress-bar h-full bg-orange-500"
             style={{ "--carousel-progress-duration": `${slideDurationMs}ms` } as React.CSSProperties}
           />
@@ -248,14 +291,37 @@ export function InternalNewsSlide({
   item,
   isActive,
   onVideoEnded,
+  minDurationMs = SLIDE_DURATION_MS,
+  onVideoDurationChange,
 }: {
   item: NoticiaInterna;
   isActive: boolean;
   onVideoEnded: () => void;
+  /** Tempo mínimo que o slide fica no ar; vídeo mais curto repete até fechá-lo. */
+  minDurationMs?: number;
+  onVideoDurationChange?: (durationMs: number) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [imgError, setImgError] = useState(false);
   const fitRef = useFitText(`${item.titulo ?? ""}|${item.subtitulo ?? ""}`);
+
+  // Liga o loop direto no elemento (e não por prop) para não depender de um
+  // re-render do pai entre o loadedmetadata e o fim de um vídeo de 2s.
+  const applyVideoDuration = useCallback(
+    (el: HTMLVideoElement) => {
+      const durationMs = Number.isFinite(el.duration) ? el.duration * 1000 : 0;
+      el.loop = durationMs > 0 && durationMs < minDurationMs;
+      if (durationMs > 0) onVideoDurationChange?.(durationMs);
+    },
+    [minDurationMs, onVideoDurationChange],
+  );
+
+  const handleLoadedMetadata = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      applyVideoDuration(e.currentTarget);
+    },
+    [applyVideoDuration],
+  );
 
   const hasMedia = !!item.mediaUrl;
   const hasTitle = !!item.titulo;
@@ -264,14 +330,18 @@ export function InternalNewsSlide({
   const showFallbackBg = !hasMedia || (item.tipoMidia === "imagem" && imgError);
 
   useEffect(() => {
-    if (!videoRef.current) return;
+    const el = videoRef.current;
+    if (!el) return;
     if (isActive) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
+      // O slide é pré-renderizado antes de ficar ativo, então o loadedmetadata
+      // já pode ter passado — reaplica a decisão de loop e reporta a duração.
+      if (el.readyState >= 1) applyVideoDuration(el);
+      el.currentTime = 0;
+      el.play().catch(() => {});
     } else {
-      videoRef.current.pause();
+      el.pause();
     }
-  }, [isActive]);
+  }, [isActive, applyVideoDuration]);
 
   // Reset img error when mediaUrl changes
   useEffect(() => {
@@ -295,9 +365,14 @@ export function InternalNewsSlide({
         <video
           ref={videoRef}
           src={item.mediaUrl}
+          data-testid="internal-news-video"
           className="absolute inset-0 w-full h-full object-cover"
           muted
           playsInline
+          // Metadados carregados já no pré-render: a duração é o que decide
+          // entre repetir o vídeo curto e avançar no fim do vídeo longo.
+          preload="metadata"
+          onLoadedMetadata={handleLoadedMetadata}
           onEnded={onVideoEnded}
         />
       ) : hasMedia && !imgError ? (
